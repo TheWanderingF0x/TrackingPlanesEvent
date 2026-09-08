@@ -1,0 +1,54 @@
+# Secrets — never commit real credentials
+.env
+.env.*
+!.env.example
+.env.local
+.env.production
+.env.development
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+credentials*.json
+secrets/
+**/secrets/
+settings.conf
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Runtime logs (may include paths / operational noise; keep out of public repos)
+logs/
+*.log
+
+# Data (collected locally / on VM — not for the public repo)
+data/raw/**
+data/curated/**
+data/aircraft/**
+!data/raw/.gitkeep
+!data/curated/.gitkeep
+!data/aircraft/.gitkeep
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Spark / Hadoop local
+metastore_db/
+derby.log
+spark-warehouse/

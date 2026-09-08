@@ -1,0 +1,24 @@
+[Unit]
+Description=TrackingPlanesEvent OpenSky state collector
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=planes
+Group=planes
+WorkingDirectory=/opt/tracking-planes
+EnvironmentFile=/opt/tracking-planes/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/tracking-planes/.venv/bin/python /opt/tracking-planes/scripts/run_collector.py
+Restart=always
+RestartSec=15
+# Give the process time to finish a poll on stop
+TimeoutStopSec=60
+
+# Hardening (lightweight)
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

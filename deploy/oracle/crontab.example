@@ -1,0 +1,12 @@
+# TrackingPlanesEvent — install via deploy/oracle/setup.sh (or: crontab -u planes -e)
+# Times are UTC on Oracle VMs if the instance timezone is UTC (recommended).
+
+SHELL=/bin/bash
+# Daily PySpark for previous UTC day (after midnight so the day is complete)
+15 0 * * * cd /opt/tracking-planes && .venv/bin/python scripts/run_spark_yesterday.py >> logs/spark_cron.log 2>&1
+
+# Weekly prune: raw states older than 14 days (Sundays 03:30 UTC)
+30 3 * * 0 find /opt/tracking-planes/data/raw/states -mindepth 1 -mtime +14 -delete >> logs/prune_cron.log 2>&1
+
+# Weekly prune: curated older than 90 days
+40 3 * * 0 find /opt/tracking-planes/data/curated -mindepth 1 -mtime +90 -delete >> logs/prune_cron.log 2>&1

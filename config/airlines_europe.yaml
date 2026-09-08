@@ -1,0 +1,114 @@
+# Major European airline ICAO callsign prefixes.
+# ADS-B callsigns are typically 8 chars, space-padded; matching uses startswith on stripped callsign.
+airlines:
+  - icao: DLH
+    name: Lufthansa
+    prefixes: [DLH]
+  - icao: AFR
+    name: Air France
+    prefixes: [AFR]
+  - icao: BAW
+    name: British Airways
+    prefixes: [BAW, SHT]
+  - icao: RYR
+    name: Ryanair
+    prefixes: [RYR, RUK]
+  - icao: EZY
+    name: easyJet
+    prefixes: [EZY, EJU, EZS]
+  - icao: KLM
+    name: KLM Royal Dutch Airlines
+    prefixes: [KLM]
+  - icao: IBE
+    name: Iberia
+    prefixes: [IBE]
+  - icao: VLG
+    name: Vueling
+    prefixes: [VLG]
+  - icao: SAS
+    name: Scandinavian Airlines
+    prefixes: [SAS]
+  - icao: FIN
+    name: Finnair
+    prefixes: [FIN]
+  - icao: AUA
+    name: Austrian Airlines
+    prefixes: [AUA]
+  - icao: SWR
+    name: Swiss International Air Lines
+    prefixes: [SWR]
+  - icao: TAP
+    name: TAP Air Portugal
+    prefixes: [TAP]
+  - icao: WZZ
+    name: Wizz Air
+    prefixes: [WZZ, WMT]
+  - icao: LOT
+    name: LOT Polish Airlines
+    prefixes: [LOT]
+  - icao: BEL
+    name: Brussels Airlines
+    prefixes: [BEL]
+  - icao: EIN
+    name: Aer Lingus
+    prefixes: [EIN]
+  - icao: NAX
+    name: Norwegian Air Shuttle
+    prefixes: [NAX, NOZ]
+  - icao: AEE
+    name: Aegean Airlines
+    prefixes: [AEE]
+  - icao: ICE
+    name: Icelandair
+    prefixes: [ICE]
+  - icao: TRA
+    name: Transavia
+    prefixes: [TRA]
+  - icao: CFG
+    name: Condor
+    prefixes: [CFG]
+  - icao: TOM
+    name: TUI Airways
+    prefixes: [TOM]
+  - icao: EWG
+    name: Eurowings
+    prefixes: [EWG]
+  - icao: VOE
+    name: Volotea
+    prefixes: [VOE]
+  - icao: ROT
+    name: TAROM
+    prefixes: [ROT]
+  - icao: CSA
+    name: Czech Airlines
+    prefixes: [CSA]
+  - icao: AZA
+    name: ITA Airways
+    prefixes: [AZA]
+  - icao: BTI
+    name: airBaltic
+    prefixes: [BTI]
+  - icao: LGL
+    name: Luxair
+    prefixes: [LGL]
+  - icao: CTN
+    name: Croatia Airlines
+    prefixes: [CTN]
+  - icao: JAF
+    name: TUI fly Belgium
+    prefixes: [JAF]
+  - icao: ENT
+    name: Enter Air
+    prefixes: [ENT]
+  - icao: SXS
+    name: SunExpress
+    prefixes: [SXS]
+  - icao: TVS
+    name: Smartwings
+    prefixes: [TVS]
+  - icao: EXS
+    name: Jet2
+    prefixes: [EXS]
+  - icao: LOG
+    name: Loganair
+    prefixes: [LOG]
