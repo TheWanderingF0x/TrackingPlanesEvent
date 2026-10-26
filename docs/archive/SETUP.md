@@ -431,6 +431,11 @@ Browser: http://127.0.0.1:8501
 | `MAX_GAP_SECONDS` | no | `1800` | Gap that splits flights in Spark |
 | `SPARK_DRIVER_MEMORY` | no | `2g` | Spark driver heap (`4g` on 12 GB Oracle VM) |
 | `GOOGLE_MAPS_API_KEY` | no (UI map) | — | Google Maps JavaScript API key for Streamlit route basemap |
+| `ADSB_ENRICH` | no | `1` | Fill OpenSky `UNKNOWN` types via adsb.lol (EU circles + cache) |
+| `ADSB_MAX_LIVE_LOOKUPS` | no | `80` | Max per-hex live lookups after circle refresh (`0` = circles/cache only) |
+| `CALLSIGN_OD_ENRICH` | no | `1` | Resolve dep/arr from callsign (adsb.lol VRS + adsbdb) during Spark |
+| `CALLSIGN_OD_MAX_LOOKUPS` | no | `200` | Max live callsign route lookups per process run |
+
 
 ### Google Maps route basemap (optional)
 

@@ -1,38 +1,48 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchFlights, type Flight } from "../api";
+import { formatFlightRoute, useAirportLabelMode } from "../airportLabels";
 
 export default function FlightsPage() {
-  const [flights, setFlights] = useState<Flight[]>([]);
+  const { mode } = useAirportLabelMode();
+  const [allFlights, setAllFlights] = useState<Flight[]>([]);
   const [note, setNote] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
   const [airline, setAirline] = useState("");
   const [family, setFamily] = useState("");
 
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (airline) params.set("airline", airline);
-    if (family) params.set("manufacturer", family);
-    fetchFlights(params)
+    fetchFlights(new URLSearchParams({ limit: "2000" }))
       .then((data) => {
-        setFlights(data.flights);
+        setAllFlights(data.flights || []);
         setNote(data.note);
       })
       .catch((e: Error) => setError(e.message));
-  }, [airline, family]);
+  }, []);
 
+  // Options always from the full snapshot — selecting ATR must not hide Boeing, etc.
   const airlines = useMemo(
     () =>
-      [...new Set(flights.map((f) => f.airline_icao).filter(Boolean) as string[])].sort(),
-    [flights]
+      [...new Set(allFlights.map((f) => f.airline_icao).filter(Boolean) as string[])].sort(),
+    [allFlights]
   );
   const families = useMemo(
     () =>
       [
-        ...new Set(flights.map((f) => f.manufacturer_family).filter(Boolean) as string[]),
+        ...new Set(
+          allFlights.map((f) => f.manufacturer_family).filter(Boolean) as string[]
+        ),
       ].sort(),
-    [flights]
+    [allFlights]
   );
+
+  const flights = useMemo(() => {
+    return allFlights.filter((f) => {
+      if (airline && f.airline_icao !== airline) return false;
+      if (family && f.manufacturer_family !== family) return false;
+      return true;
+    });
+  }, [allFlights, airline, family]);
 
   return (
     <div className="page">
@@ -69,8 +79,6 @@ export default function FlightsPage() {
               <th>Type</th>
               <th>Family</th>
               <th>Route</th>
-              <th>Km</th>
-              <th>Specs</th>
               <th />
             </tr>
           </thead>
@@ -83,18 +91,8 @@ export default function FlightsPage() {
                 </td>
                 <td>{f.aircraft_type}</td>
                 <td>{f.manufacturer_family}</td>
-                <td>
-                  {(f.dep_airport_iata || f.dep_airport_icao || "?") +
-                    " → " +
-                    (f.arr_airport_iata || f.arr_airport_icao || "?")}
-                </td>
-                <td>{f.distance_km?.toFixed?.(0) ?? "—"}</td>
-                <td>
-                  {f.specs_is_complete ? (
-                    <span className="badge badge-ok">complete</span>
-                  ) : (
-                    <span className="badge badge-warn">incomplete</span>
-                  )}
+                <td className={mode === "full" ? "route-cell" : undefined}>
+                  {formatFlightRoute(f, mode)}
                 </td>
                 <td>
                   <Link to={`/routes/${f.flight_id}`}>Map</Link>
@@ -105,8 +103,8 @@ export default function FlightsPage() {
         </table>
       </div>
       <p className="disclaimer">
-        Origin/destination airports are nearest-airport estimates from ADS-B positions, not
-        official schedules.
+        Routes prefer scheduled origin/destination from the flight callsign when available;
+        otherwise nearest-airport estimates from ADS-B. Not an official airline schedule.
       </p>
     </div>
   );

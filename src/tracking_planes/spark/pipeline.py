@@ -37,9 +37,21 @@ def run_pipeline(settings: Settings, utc_date: str, *, refresh_aircraft_db: bool
             target_utc_date=utc_date,
         )
         flights, tracks = enrich_with_aircraft_type(
-            spark, flights, tracks, settings.aircraft_dir
+            spark,
+            flights,
+            tracks,
+            settings.aircraft_dir,
+            reference_dir=settings.reference_dir,
+            adsb_enrich=settings.adsb_enrich,
+            adsb_max_live_lookups=settings.adsb_max_live_lookups,
         )
-        flights = enrich_manufacturer_and_route(spark, flights)
+        flights = enrich_manufacturer_and_route(
+            spark,
+            flights,
+            reference_dir=settings.reference_dir,
+            callsign_od_enrich=settings.callsign_od_enrich,
+            callsign_od_max_lookups=settings.callsign_od_max_lookups,
+        )
         flights = enrich_with_specs(spark, flights)
 
         settings.flights_dir.mkdir(parents=True, exist_ok=True)

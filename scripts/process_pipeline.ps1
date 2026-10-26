@@ -1,8 +1,8 @@
-# Phase C PC brain wrapper
+# Pair raw lakes → Spark → emissions → static JSON (+ optional Databricks).
 # Usage:
-#   .\scripts\phase_c_process.ps1
-#   .\scripts\phase_c_process.ps1 -Databricks
-#   .\scripts\phase_c_process.ps1 -ExportOnly
+#   .\scripts\process_pipeline.ps1
+#   .\scripts\process_pipeline.ps1 -Databricks
+#   .\scripts\process_pipeline.ps1 -ExportOnly
 
 param(
     [switch] $Databricks,
@@ -18,7 +18,7 @@ Set-Location $RepoRoot
 $py = Join-Path $RepoRoot ".venv\Scripts\python.exe"
 if (-not (Test-Path $py)) { $py = "python" }
 
-$argv = @("scripts\phase_c_process.py")
+$argv = @("scripts\process_pipeline.py")
 if ($ExportOnly) { $argv += "--export-only" }
 if ($Databricks) { $argv += "--databricks" }
 if ($Weather) { $argv += "--weather" }

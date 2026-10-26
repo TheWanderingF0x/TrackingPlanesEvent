@@ -1,11 +1,12 @@
-# Phase C: process lake + commit/push web/public/data so Vercel (GitHub) redeploys.
+# Pair raw → Spark → emissions model → static JSON → optional Databricks →
+# commit/push web/public/data so Vercel redeploys from GitHub.
 #
 # Usage:
-#   .\scripts\phase_c_publish.ps1
-#   .\scripts\phase_c_publish.ps1 -ExportOnly
-#   .\scripts\phase_c_publish.ps1 -Databricks
-#   .\scripts\phase_c_publish.ps1 -SkipPush          # commit only
-#   .\scripts\phase_c_publish.ps1 -Message "daily snapshot"
+#   .\scripts\process_and_publish.ps1
+#   .\scripts\process_and_publish.ps1 -Databricks
+#   .\scripts\process_and_publish.ps1 -ExportOnly
+#   .\scripts\process_and_publish.ps1 -SkipPush
+#   .\scripts\process_and_publish.ps1 -Message "daily snapshot"
 
 param(
     [switch] $Databricks,
@@ -20,15 +21,14 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 Set-Location $RepoRoot
 
-# 1) Brain: Spark / emissions / static JSON
 $procArgs = @{}
 if ($Databricks) { $procArgs["Databricks"] = $true }
 if ($ExportOnly) { $procArgs["ExportOnly"] = $true }
 if ($Weather) { $procArgs["Weather"] = $true }
 if ($Date.Count -gt 0) { $procArgs["Date"] = $Date }
 
-Write-Host "=== phase_c_process ===" -ForegroundColor Cyan
-& (Join-Path $PSScriptRoot "phase_c_process.ps1") @procArgs
+Write-Host "=== process_pipeline ===" -ForegroundColor Cyan
+& (Join-Path $PSScriptRoot "process_pipeline.ps1") @procArgs
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $dataDir = "web/public/data"
@@ -36,7 +36,6 @@ if (-not (Test-Path $dataDir)) {
     Write-Error "Missing $dataDir after process — abort publish."
 }
 
-# 2) Stage only static site payload (never .env / secrets)
 git add -- $dataDir
 $status = git status --porcelain -- $dataDir
 if (-not $status) {

@@ -109,5 +109,5 @@ if ($env:DATABRICKS_HOST) {
 }
 
 Write-Host ""
-Write-Host "Next: docs/CLOUD_AND_DATABRICKS.md (Phase 1 checklist)"
+Write-Host "Next: docs/SETUP_AND_RUN.md"
 Write-Host ""

@@ -1,9 +1,36 @@
 # Changelog
 
+## 0.5.6 — 2026-10-26
+
+- **ADS-B gap-fill:** optional [adsb.lol](https://api.adsb.lol) enricher fills OpenSky `UNKNOWN` aircraft types (EU circle snapshots + capped per-hex lookups). Cache: `data/reference/adsb_hex_types.parquet`. Env: `ADSB_ENRICH`, `ADSB_MAX_LIVE_LOOKUPS`; `phase_c_process.py --no-adsb` to skip. OpenSky stays primary collector/registry.
+- Docs: only active guide is [`SETUP_AND_RUN.md`](docs/SETUP_AND_RUN.md); older docs moved to [`docs/archive/`](docs/archive/).
+- Scripts renamed: `phase_c_publish.ps1` → `process_and_publish.ps1`; `phase_c_process` → `process_pipeline` (.py / .ps1).
+- adsb.lol: stop on HTTP 429 (backoff then abort); prefer paired cache over live circles/hex; default `ADSB_MAX_LIVE_LOOKUPS=0`.
+- **Callsign OD:** Spark resolves scheduled origin/destination via adsb.lol VRS + adsbdb (cache `callsign_routes.parquet`); runs on PC in `phase_c_process` after phone/PC raw. Env: `CALLSIGN_OD_ENRICH`, `--no-callsign-od`.
+- Flights page: removed Specs column; disclaimer updated for callsign routes.
+- Airport labels: top-nav **Full names | ICAO** toggle (persisted). Full-names mode shows complete place/airport wording only (no FRA/LHR); ICAO mode shows codes. Expanded `airports_europe.csv` official-style names; API/export prefer those over acronyms.
+- Full names no longer stuck on “Unknown place”: client catalog (`airportsCatalog.ts` / `airports.json`) resolves ICAO/IATA → full name; export sanitizes `nan` and regenerates the catalog.
+- Flights table: removed Km column.
+- Flights filters: airline/manufacturer dropdowns keep the full option list; filtering is client-side so switching ATR → Boeing → All works without reloading options.
+- **Multi-API collector (single trigger):** `run_collector.py` / `run_collector.ps1` polls OpenSky + adsb.lol + callsign OD into `data/raw/{states,adsb_lol,callsign_routes}/`. PC `pair_raw_sources` cleans/pairs into reference caches before Spark (`phase_c_process`).
+
 ## 0.5.5 — 2026-10-26
 
-- **Phase C:** phone primary collector (Syncthing → PC); `scripts/phase_c_process.py` runs Spark → emissions → `web/public/data/*.json`; optional Databricks sync; Vercel static site (`web/vercel.json`) with daily-update disclaimer. Docs: [`docs/PHASE_C_PHONE.md`](docs/PHASE_C_PHONE.md).
+- Phone/PC collect → Syncthing → PC process → Vercel static site (`web/vercel.json`) with daily-update disclaimer. Docs: [`docs/SETUP_AND_RUN.md`](docs/SETUP_AND_RUN.md).
 - `scripts/phase_c_publish.ps1`: process + commit/push `web/public/data` so GitHub-linked Vercel redeploys alone.
+- Analytics: friendly “Updated …” timestamp instead of raw ISO `Snapshot: …Z`.
+- Landing hero: quiet photo credit link to vulpeahoinara.com.
+- Analytics dashboard layout: flight table, CO₂ bars, fleet tables, top-5 donut, routes (Databricks-style panels on site theme).
+- Specs: Wikipedia link per aircraft type/model (kept tab; dropped incomplete/status clutter).
+- Web: if FastAPI (:8000) is down in dev, fall back to `web/public/data/*.json`.
+- Routes: hide flights without real OD (no `?→?` / UNKNOWN / same airport); fetch up to 2000 so valid OD pairs are not truncated.
+- Routes detail line: omit aircraft type/family when UNKNOWN / missing.
+- Routes: disclaimer that some data may be incomplete.
+- Landing hero copy moved to top center (clearer over the photo).
+- Disclaimer copy shortened to “Data updates daily — not a live feed.”
+- Site brand renamed to **Tracking Planes** (display name; repo/package paths unchanged).
+- Routes map scales with viewport height/width (ResizeObserver + fluid panel).
+- Analytics: explicit units (kg, m, m/s, count, IATA) on stats/charts/tables.
 
 ## 0.5.4 — 2026-10-26
 

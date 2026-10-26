@@ -2,9 +2,9 @@ import { Link } from "react-router-dom";
 
 export default function Landing() {
   return (
-    <section className="hero" aria-label="TrackingPlanesEvent home">
+    <section className="hero" aria-label="Tracking Planes home">
       <div className="hero-inner">
-        <h1>TrackingPlanesEvent</h1>
+        <h1>Tracking Planes</h1>
         <p>
           European airline tracks, aircraft specs, and estimated fuel &amp; NOx —
           results from OpenSky and a Databricks-ready lake.
@@ -17,8 +17,14 @@ export default function Landing() {
             View analytics
           </Link>
         </div>
-        <p className="hero-note">Data updates daily (or when redeployed) — not a live feed.</p>
+        <p className="hero-note">Data updates daily — not a live feed.</p>
       </div>
+      <p className="hero-credit">
+        Photo{" "}
+        <a href="https://www.vulpeahoinara.com" target="_blank" rel="noopener noreferrer">
+          vulpeahoinara.com
+        </a>
+      </p>
     </section>
   );
 }

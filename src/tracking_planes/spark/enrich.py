@@ -13,6 +13,7 @@ from pyspark.sql import types as T
 from tracking_planes.aircraft_registry import load_aircraft_types
 from tracking_planes.aircraft_specs import load_aircraft_specs
 from tracking_planes.airports import (
+    airport_display_name,
     airport_gcd_km,
     haversine_km,
     load_airports,
@@ -28,9 +29,35 @@ def enrich_with_aircraft_type(
     flights: DataFrame,
     track_points: DataFrame,
     aircraft_dir: Path,
+    *,
+    reference_dir: Path | None = None,
+    adsb_enrich: bool = True,
+    adsb_max_live_lookups: int = 0,
 ) -> tuple[DataFrame, DataFrame]:
     pdf = load_aircraft_types(aircraft_dir)
-    aircraft_sdf = spark.createDataFrame(pdf)
+
+    if adsb_enrich and reference_dir is not None:
+        from tracking_planes.adsb.hex_types import merge_adsb_types_into_registry
+
+        flight_hexes = [
+            r.icao24
+            for r in flights.select("icao24").distinct().collect()
+            if getattr(r, "icao24", None)
+        ]
+        # Prefer paired collector cache; live circles only if cache empty;
+        # per-hex live lookups off by default (ADSB_MAX_LIVE_LOOKUPS).
+        pdf = merge_adsb_types_into_registry(
+            pdf,
+            flight_hexes,
+            reference_dir,
+            refresh_circles=None,
+            max_live_lookups=adsb_max_live_lookups,
+            pause_seconds=2.0,
+        )
+        logger.info("Merged adsb.lol gap-fill into aircraft type registry")
+
+    keep_cols = [c for c in ("icao24", "aircraft_type") if c in pdf.columns]
+    aircraft_sdf = spark.createDataFrame(pdf[keep_cols])
 
     flights_enriched = (
         flights.join(aircraft_sdf.select("icao24", "aircraft_type"), "icao24", "left")
@@ -55,23 +82,59 @@ def enrich_manufacturer_and_route(
     *,
     airports_csv: Path | None = None,
     max_airport_km: float = 80.0,
+    reference_dir: Path | None = None,
+    callsign_od_enrich: bool = True,
+    callsign_od_max_lookups: int = 200,
 ) -> DataFrame:
     """
-    Add manufacturer_family, dep/arr airports (nearest), great-circle distance_km.
+    Add manufacturer_family, dep/arr airports, great-circle distance_km.
 
-    OD is an ADS-B nearest-airport estimate — not an official schedule.
-    distance_km prefers airport-to-airport haversine (Earth sphere) when dep/arr
-    differ; otherwise falls back to great-circle between first/last track points.
+    OD preference:
+      1) Callsign scheduled route (adsb.lol VRS / adsbdb) when lookup hits.
+      2) Nearest-airport from first/last ADS-B positions (fallback).
+
+    distance_km prefers airport-to-airport haversine when dep/arr differ;
+    else track endpoints / speed×duration.
     """
     airports = load_airports(airports_csv)
     rows = flights.toPandas()
     if rows.empty:
         return flights
 
+    from tracking_planes.routes.callsign_od import lookup_callsign_routes, norm_callsign
+
+    callsign_map: dict[str, dict] = {}
+    if callsign_od_enrich and reference_dir is not None:
+        positions: dict[str, tuple[float | None, float | None]] = {}
+        callsigns: list[str] = []
+        for row in rows.itertuples(index=False):
+            cs = norm_callsign(getattr(row, "callsign", None) or getattr(row, "flight_number", None))
+            if not cs:
+                continue
+            callsigns.append(cs)
+            lat = getattr(row, "last_lat", None) or getattr(row, "first_lat", None)
+            lon = getattr(row, "last_lon", None) or getattr(row, "first_lon", None)
+            try:
+                positions[cs] = (
+                    float(lat) if lat is not None and pd.notna(lat) else None,
+                    float(lon) if lon is not None and pd.notna(lon) else None,
+                )
+            except (TypeError, ValueError):
+                positions[cs] = (None, None)
+        callsign_map = lookup_callsign_routes(
+            callsigns,
+            reference_dir,
+            max_lookups=callsign_od_max_lookups,
+            positions=positions,
+        )
+        logger.info("Callsign OD lookups available for %s callsigns", len(callsign_map))
+
     dep_icao: list[str | None] = []
     dep_iata: list[str | None] = []
+    dep_name: list[str | None] = []
     arr_icao: list[str | None] = []
     arr_iata: list[str | None] = []
+    arr_name: list[str | None] = []
     families: list[str] = []
     distances: list[float | None] = []
     track_gcds: list[float | None] = []
@@ -91,10 +154,33 @@ def enrich_manufacturer_and_route(
             airports,
             max_km=max_airport_km,
         )
+
+        od_tag = "nearest_airport_adsb"
+        cs = norm_callsign(getattr(row, "callsign", None) or getattr(row, "flight_number", None))
+        scheduled = callsign_map.get(cs) if cs else None
+        d_name: str | None = None
+        a_name: str | None = None
+        # Prefer callsign schedule when available (fills incomplete ADS-B tracks).
+        if scheduled and scheduled.get("dep_icao") and scheduled.get("arr_icao"):
+            d_icao = scheduled["dep_icao"]
+            d_iata = scheduled.get("dep_iata") or d_iata
+            a_icao = scheduled["arr_icao"]
+            a_iata = scheduled.get("arr_iata") or a_iata
+            d_name = scheduled.get("dep_name")
+            a_name = scheduled.get("arr_name")
+            od_tag = f"callsign_{scheduled.get('source', 'route')}"
+
+        if not d_name:
+            d_name = airport_display_name(d_icao, d_iata, airports)
+        if not a_name:
+            a_name = airport_display_name(a_icao, a_iata, airports)
+
         dep_icao.append(d_icao)
         dep_iata.append(d_iata)
+        dep_name.append(d_name)
         arr_icao.append(a_icao)
         arr_iata.append(a_iata)
+        arr_name.append(a_name)
 
         track_gcd: float | None = None
         if (
@@ -143,7 +229,12 @@ def enrich_manufacturer_and_route(
         od_gcd = airport_gcd_km(d_icao, a_icao, airports)
         candidates: list[tuple[float, str]] = []
         if od_gcd is not None and od_gcd > 0:
-            candidates.append((od_gcd, "airport_gcd_haversine"))
+            method = (
+                f"{od_tag}+airport_gcd"
+                if od_tag.startswith("callsign_")
+                else "airport_gcd_haversine"
+            )
+            candidates.append((od_gcd, method))
         if track_gcd is not None and track_gcd > 0:
             candidates.append((track_gcd, "track_endpoints_haversine"))
         if speed_km is not None and speed_km > 0:
@@ -152,17 +243,23 @@ def enrich_manufacturer_and_route(
         if candidates:
             best_km, best_method = max(candidates, key=lambda x: x[0])
             distances.append(best_km)
-            od_methods.append(best_method)
+            # Keep callsign OD tag even if distance came from track/speed
+            if od_tag.startswith("callsign_") and not str(best_method).startswith("callsign_"):
+                od_methods.append(f"{od_tag}+{best_method}")
+            else:
+                od_methods.append(best_method)
         else:
             distances.append(None)
-            od_methods.append("nearest_airport_adsb")
+            od_methods.append(od_tag)
 
     rows = rows.copy()
     rows["manufacturer_family"] = families
     rows["dep_airport_icao"] = dep_icao
     rows["dep_airport_iata"] = dep_iata
+    rows["dep_airport_name"] = dep_name
     rows["arr_airport_icao"] = arr_icao
     rows["arr_airport_iata"] = arr_iata
+    rows["arr_airport_name"] = arr_name
     rows["distance_km"] = distances
     rows["track_gcd_km"] = track_gcds
     rows["od_method"] = od_methods
@@ -184,8 +281,10 @@ def enrich_manufacturer_and_route(
             T.StructField("manufacturer_family", T.StringType(), True),
             T.StructField("dep_airport_icao", T.StringType(), True),
             T.StructField("dep_airport_iata", T.StringType(), True),
+            T.StructField("dep_airport_name", T.StringType(), True),
             T.StructField("arr_airport_icao", T.StringType(), True),
             T.StructField("arr_airport_iata", T.StringType(), True),
+            T.StructField("arr_airport_name", T.StringType(), True),
             T.StructField("distance_km", T.DoubleType(), True),
             T.StructField("track_gcd_km", T.DoubleType(), True),
             T.StructField("od_method", T.StringType(), True),
@@ -200,8 +299,10 @@ def enrich_manufacturer_and_route(
                 "manufacturer_family",
                 "dep_airport_icao",
                 "dep_airport_iata",
+                "dep_airport_name",
                 "arr_airport_icao",
                 "arr_airport_iata",
+                "arr_airport_name",
                 "distance_km",
                 "track_gcd_km",
                 "od_method",

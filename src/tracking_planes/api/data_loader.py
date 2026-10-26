@@ -124,4 +124,19 @@ def df_records(df: pd.DataFrame, limit: int | None = None) -> list[dict]:
         return []
     out = df.head(limit) if limit else df
     # Replace NaN with None for JSON
-    return out.where(pd.notnull(out), None).to_dict(orient="records")
+    records = out.where(pd.notnull(out), None).to_dict(orient="records")
+    bad = {"", "nan", "none", "null", "nat", "<na>"}
+    cleaned: list[dict] = []
+    for rec in records:
+        row = {}
+        for k, v in rec.items():
+            if v is None:
+                row[k] = None
+            elif isinstance(v, float) and pd.isna(v):
+                row[k] = None
+            elif isinstance(v, str) and v.strip().lower() in bad:
+                row[k] = None
+            else:
+                row[k] = v
+        cleaned.append(row)
+    return cleaned

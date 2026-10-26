@@ -26,6 +26,10 @@ class Settings:
     airlines_config: Path
     max_gap_seconds: int
     google_maps_api_key: str | None = None
+    adsb_enrich: bool = True
+    adsb_max_live_lookups: int = 0
+    callsign_od_enrich: bool = True
+    callsign_od_max_lookups: int = 200
 
     def __repr__(self) -> str:
         # Never leak OAuth / Maps secrets via logs / debug prints
@@ -38,12 +42,24 @@ class Settings:
             f"data_dir={self.data_dir!r}, "
             f"airlines_config={self.airlines_config!r}, "
             f"max_gap_seconds={self.max_gap_seconds}, "
-            f"google_maps_api_key_set={maps_set})"
+            f"google_maps_api_key_set={maps_set}, "
+            f"adsb_enrich={self.adsb_enrich}, "
+            f"adsb_max_live_lookups={self.adsb_max_live_lookups}, "
+            f"callsign_od_enrich={self.callsign_od_enrich}, "
+            f"callsign_od_max_lookups={self.callsign_od_max_lookups})"
         )
 
     @property
     def raw_states_dir(self) -> Path:
         return self.data_dir / "raw" / "states"
+
+    @property
+    def raw_adsb_lol_dir(self) -> Path:
+        return self.data_dir / "raw" / "adsb_lol"
+
+    @property
+    def raw_callsign_routes_dir(self) -> Path:
+        return self.data_dir / "raw" / "callsign_routes"
 
     @property
     def curated_dir(self) -> Path:
@@ -115,6 +131,21 @@ def load_settings(*, dotenv_path: Path | None = None) -> Settings:
     if not airlines_config.is_absolute():
         airlines_config = PROJECT_ROOT / airlines_config
 
+    adsb_raw = (os.getenv("ADSB_ENRICH", "1") or "1").strip().lower()
+    adsb_enrich = adsb_raw not in {"0", "false", "no", "off"}
+    try:
+        # Default 0: use collector raw + pair_raw cache; avoid adsb.lol 429 storms
+        adsb_max_live = int(os.getenv("ADSB_MAX_LIVE_LOOKUPS", "0"))
+    except ValueError:
+        adsb_max_live = 0
+
+    od_raw = (os.getenv("CALLSIGN_OD_ENRICH", "1") or "1").strip().lower()
+    callsign_od_enrich = od_raw not in {"0", "false", "no", "off"}
+    try:
+        callsign_od_max = int(os.getenv("CALLSIGN_OD_MAX_LOOKUPS", "200"))
+    except ValueError:
+        callsign_od_max = 200
+
     return Settings(
         opensky_client_id=_require("OPENSKY_CLIENT_ID"),
         opensky_client_secret=_require("OPENSKY_CLIENT_SECRET"),
@@ -123,6 +154,10 @@ def load_settings(*, dotenv_path: Path | None = None) -> Settings:
         airlines_config=airlines_config,
         max_gap_seconds=int(os.getenv("MAX_GAP_SECONDS", "1800")),
         google_maps_api_key=(os.getenv("GOOGLE_MAPS_API_KEY") or "").strip() or None,
+        adsb_enrich=adsb_enrich,
+        adsb_max_live_lookups=max(0, adsb_max_live),
+        callsign_od_enrich=callsign_od_enrich,
+        callsign_od_max_lookups=max(0, callsign_od_max),
     )
 
 

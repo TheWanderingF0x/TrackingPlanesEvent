@@ -6,7 +6,7 @@ structure (GCD correction, load / pax-to-cargo factors, CO2 = fuel × 3.16),
 combined with ADS-B track phase burn and Open-Meteo weather features.
 
 This is NOT a certified ICEC / CORSIA implementation — portfolio estimates only.
-See docs/EMISSIONS.md.
+See docs/archive/EMISSIONS.md (archived notes).
 """
 
 from __future__ import annotations

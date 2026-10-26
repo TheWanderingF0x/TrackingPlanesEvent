@@ -82,6 +82,46 @@ def nearest_airport(
     return best_icao, best_iata, round(best_d, 2)
 
 
+def airport_display_name(
+    icao: str | None,
+    iata: str | None,
+    airports: pd.DataFrame,
+) -> str | None:
+    """Return airport name from local reference by ICAO (preferred) or IATA."""
+    if airports is None or airports.empty:
+        return None
+    if icao:
+        hit = airports[airports["icao"].astype(str).str.upper() == str(icao).upper().strip()]
+        if not hit.empty:
+            name = hit.iloc[0].get("name")
+            if name is not None and str(name).strip():
+                return str(name).strip()
+    if iata:
+        hit = airports[airports["iata"].astype(str).str.upper() == str(iata).upper().strip()]
+        if not hit.empty:
+            name = hit.iloc[0].get("name")
+            if name is not None and str(name).strip():
+                return str(name).strip()
+    return None
+
+
+def airports_name_index(airports: pd.DataFrame | None = None) -> dict[str, str]:
+    """Map ICAO (and IATA) → display name for quick enrichment."""
+    df = airports if airports is not None else load_airports()
+    out: dict[str, str] = {}
+    for row in df.itertuples(index=False):
+        name = str(getattr(row, "name", "") or "").strip()
+        if not name:
+            continue
+        icao = str(getattr(row, "icao", "") or "").upper().strip()
+        iata = str(getattr(row, "iata", "") or "").upper().strip()
+        if icao:
+            out[icao] = name
+        if iata and iata not in out:
+            out[iata] = name
+    return out
+
+
 def manufacturer_family_from_typecode(typecode: str | None) -> str:
     """Map ICAO typecode to manufacturer family (Airbus, Boeing, …)."""
     if not typecode or typecode.upper() in {"UNKNOWN", "NAN", "NONE", ""}:

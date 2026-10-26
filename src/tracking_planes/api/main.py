@@ -62,8 +62,10 @@ def flights(
             "manufacturer_family",
             "dep_airport_icao",
             "dep_airport_iata",
+            "dep_airport_name",
             "arr_airport_icao",
             "arr_airport_iata",
+            "arr_airport_name",
             "distance_km",
             "duration_h",
             "specs_is_complete",
@@ -71,7 +73,13 @@ def flights(
         ]
         if c in df.columns
     ]
-    records = dl.df_records(df[cols], limit=limit)
+    from tracking_planes.api.airport_labels import attach_airport_names_df
+
+    labeled = attach_airport_names_df(df)
+    for c in ("dep_airport_name", "arr_airport_name"):
+        if c not in cols and c in labeled.columns:
+            cols.append(c)
+    records = dl.df_records(labeled[cols], limit=limit)
     return {"count": len(records), "flights": records}
 
 
@@ -82,7 +90,9 @@ def route(flight_id: str) -> dict:
     meta = flights[flights["flight_id"] == flight_id] if not flights.empty else flights
     if meta.empty:
         raise HTTPException(404, f"Unknown flight_id: {flight_id}")
-    meta_rec = dl.df_records(meta.head(1))[0]
+    from tracking_planes.api.airport_labels import attach_airport_names_record
+
+    meta_rec = attach_airport_names_record(dl.df_records(meta.head(1))[0])
     pts = tracks[tracks["flight_id"] == flight_id] if not tracks.empty else tracks
     if not pts.empty and "snapshot_time" in pts.columns:
         pts = pts.sort_values("snapshot_time")
@@ -90,7 +100,10 @@ def route(flight_id: str) -> dict:
     return {
         "flight": meta_rec,
         "track": dl.df_records(pts[track_cols] if track_cols else pts),
-        "disclaimer": "OD airports are ADS-B nearest-airport estimates, not official schedules.",
+        "disclaimer": (
+            "OD prefers callsign scheduled routes when available; "
+            "otherwise ADS-B nearest-airport. Not an official airline schedule."
+        ),
     }
 
 

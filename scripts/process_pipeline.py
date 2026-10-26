@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""Phase C PC brain: Spark -> emissions -> static JSON (+ optional Databricks sync).
+"""Pair raw → Spark → emissions → static JSON (+ optional Databricks sync).
 
 After Syncthing brings phone raw data into data/raw, run:
 
-  python scripts/phase_c_process.py
-  python scripts/phase_c_process.py --date 2026-10-26 --databricks
+  python scripts/process_pipeline.py
+  python scripts/process_pipeline.py --date 2026-10-26 --databricks
+
+Or the full publish path (git push for Vercel):
+
+  .\\scripts\\process_and_publish.ps1 -Databricks
 """
 
 from __future__ import annotations
@@ -22,6 +26,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from tracking_planes.api.static_export import export_static_site_data
 from tracking_planes.config import load_settings_or_exit
 from tracking_planes.ml.emissions import run_emissions_pipeline
+from tracking_planes.spark.pair_raw import pair_raw_sources
 from tracking_planes.spark.pipeline import run_pipeline
 
 logger = logging.getLogger(__name__)
@@ -40,7 +45,7 @@ def discover_raw_dates(raw_states: Path) -> list[str]:
 
 def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    parser = argparse.ArgumentParser(description="Phase C: process raw -> gold -> static site data")
+    parser = argparse.ArgumentParser(description="Process raw -> gold -> static site data")
     parser.add_argument(
         "--date",
         action="append",
@@ -72,8 +77,26 @@ def main() -> int:
         action="store_true",
         help="Only write web/public/data JSON from current silver/gold",
     )
+    parser.add_argument(
+        "--no-adsb",
+        action="store_true",
+        help="Skip adsb.lol gap-fill for UNKNOWN aircraft types (OpenSky only)",
+    )
+    parser.add_argument(
+        "--no-callsign-od",
+        action="store_true",
+        help="Skip callsign→scheduled OD lookups (nearest-airport ADS-B only)",
+    )
     args = parser.parse_args()
     settings = load_settings_or_exit()
+    if args.no_adsb or args.no_callsign_od:
+        from dataclasses import replace
+
+        settings = replace(
+            settings,
+            adsb_enrich=False if args.no_adsb else settings.adsb_enrich,
+            callsign_od_enrich=False if args.no_callsign_od else settings.callsign_od_enrich,
+        )
 
     if not args.export_only:
         dates = args.dates
@@ -85,6 +108,9 @@ def main() -> int:
             dates = [today]
 
         if not args.skip_spark:
+            # Clean + pair multi-API raw (adsb.lol + callsign OD) into reference caches
+            logger.info("Pairing raw multi-API dumps into reference caches…")
+            pair_raw_sources(settings)
             for d in dates:
                 logger.info("Spark pipeline for %s", d)
                 run_pipeline(settings, d)
@@ -120,10 +146,9 @@ def main() -> int:
             return proc.returncode
 
     print()
-    print("Phase C process done.")
+    print("Process pipeline done.")
     print("  Static JSON: web/public/data/")
-    print("  Deploy site:  cd web && npm run build && vercel --prod")
-    print("  Or push to Git if Vercel is linked to the repo.")
+    print("  Full publish (Databricks + Vercel push): .\\scripts\\process_and_publish.ps1 -Databricks")
     return 0
 
 

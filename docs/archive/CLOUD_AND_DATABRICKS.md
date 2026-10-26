@@ -1,7 +1,7 @@
-# Deploy phases — PC + Databricks, Phase C phone, then VPS/server
+# Deploy — PC + Databricks, phone collect, then VPS/server
 
 **Phase 1:** run the stack on your **Windows PC** and connect **Databricks**.  
-**Phase C:** phone = primary collector (Syncthing → PC); PC = brain; **Vercel** hosts the static site (daily JSON). See [`PHASE_C_PHONE.md`](PHASE_C_PHONE.md).  
+**Day-to-day ops (only doc you need for collect → Databricks → Vercel):** [`SETUP_AND_RUN.md`](SETUP_AND_RUN.md).
 **Phase 2 (optional):** move always-on host to a **VPS** or home **server**.
 
 Local live test first (collector → Spark → emissions → API/web), then follow this sheet.
@@ -107,28 +107,15 @@ Align `catalog` / `schema` / volume name with your Volume. Run 01 → 02 → 03 
 
 ---
 
-## Phase C — Phone collect → PC brain → Vercel
+## Phone / PC collect → process → Vercel
 
-```text
-Phone Termux collector → Syncthing → PC data/raw
-                              ↓
-              phase_c_process.py (Spark → emissions → web/public/data/*.json)
-                              ↓
-              Databricks sync (optional)  |  Vercel static site
-```
-
-1. Phone + Syncthing: [`PHASE_C_PHONE.md`](PHASE_C_PHONE.md)  
-2. On PC after sync:
+Simple steps: [`SETUP_AND_RUN.md`](SETUP_AND_RUN.md).
 
 ```powershell
-.\scripts\phase_c_publish.ps1              # process + commit/push web/public/data → Vercel
-.\scripts\phase_c_publish.ps1 -Databricks  # same + Databricks sync
+.\scripts\run_collector.ps1                # or on phone: run_collector.py
+.\scripts\phase_c_publish.ps1              # after Syncthing: process + push → Vercel
+.\scripts\phase_c_publish.ps1 -Databricks  # same + Databricks
 ```
-
-3. Vercel: GitHub connected, **Root Directory** = `web/`. Push updates the site automatically.  
-4. Site disclaimer: data updates **daily** (or on each publish push).
-
-PC `scripts/run_collector.py` remains a secondary collector.
 
 ---
 

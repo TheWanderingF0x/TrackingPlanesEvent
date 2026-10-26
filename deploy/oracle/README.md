@@ -1,10 +1,7 @@
 # Linux host ops — Oracle / VPS / home server
 
-Used in **Phase 2** (always-on host). Phase 1 stays on the PC + Databricks:  
-**[docs/CLOUD_AND_DATABRICKS.md](../../docs/CLOUD_AND_DATABRICKS.md)** · **[deploy/phase2/README.md](../phase2/README.md)**
-
-Full Oracle walkthrough: **[docs/SETUP.md — §6](../../docs/SETUP.md#6-oracle-cloud-always-free-247)**  
-Databricks sync: **[docs/DATABRICKS.md](../../docs/DATABRICKS.md)**
+Day-to-day ops: **[docs/SETUP_AND_RUN.md](../../docs/SETUP_AND_RUN.md)**.  
+Archived deep dives: [docs/archive/](../../docs/archive/) · [deploy/phase2/README.md](../phase2/README.md)
 
 These systemd/nginx scripts work on any Ubuntu 22.04 host (not only OCI).
 

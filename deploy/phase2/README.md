@@ -22,5 +22,6 @@ cd d:\Dev_Area\TrackingPlanesEvent
 3. On the host: copy `.env`, then `sudo bash deploy/oracle/setup.sh`  
 4. Sync to Databricks **from this host** (install CLI) or keep using `scripts/sync_to_databricks.ps1` after `rsync` of `data/`  
 
-Full story: [`docs/CLOUD_AND_DATABRICKS.md`](../../docs/CLOUD_AND_DATABRICKS.md).  
+Day-to-day: [`docs/SETUP_AND_RUN.md`](../../docs/SETUP_AND_RUN.md).  
+Archived notes: [`docs/archive/CLOUD_AND_DATABRICKS.md`](../../docs/archive/CLOUD_AND_DATABRICKS.md).  
 Oracle-specific ops: [`../oracle/README.md`](../oracle/README.md).

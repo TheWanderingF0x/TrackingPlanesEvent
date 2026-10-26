@@ -8,8 +8,10 @@ export type Flight = {
   manufacturer_family?: string;
   dep_airport_icao?: string;
   dep_airport_iata?: string;
+  dep_airport_name?: string;
   arr_airport_icao?: string;
   arr_airport_iata?: string;
+  arr_airport_name?: string;
   distance_km?: number;
   duration_h?: number;
   specs_is_complete?: boolean;
@@ -78,6 +80,29 @@ export type AnalyticsPayload = {
     co2_kg_est?: number;
     nox_kg_est?: number;
   }[];
+  flight_rows?: {
+    airline_name?: string;
+    airline_icao?: string;
+    aircraft_type?: string;
+    callsign?: string;
+    max_baro_altitude_m?: number;
+    max_velocity_ms?: number;
+  }[];
+  top_routes?: {
+    dep_airport_iata?: string;
+    arr_airport_iata?: string;
+    dep_airport_icao?: string;
+    arr_airport_icao?: string;
+    dep_airport_name?: string;
+    arr_airport_name?: string;
+    flights: number;
+  }[];
+  fleet_mix?: {
+    manufacturer_family?: string;
+    aircraft_type?: string;
+    model_name?: string;
+    flights: number;
+  }[];
   disclaimer: string;
 };
 
@@ -122,12 +147,22 @@ async function getJson<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function fetchFlights(params: URLSearchParams = new URLSearchParams()) {
+/** Prefer live API in dev; if FastAPI is down, use Phase C static JSON. */
+async function getApiOrStatic<T>(apiPath: string, staticPath: string): Promise<T> {
   if (useStaticData()) {
-    return getJson<{ count: number; flights: Flight[]; note?: string }>("/data/flights.json");
+    return getJson<T>(staticPath);
   }
-  return getJson<{ count: number; flights: Flight[]; note?: string }>(
-    `/api/flights?${params}`
+  try {
+    return await getJson<T>(apiPath);
+  } catch {
+    return getJson<T>(staticPath);
+  }
+}
+
+export function fetchFlights(params: URLSearchParams = new URLSearchParams()) {
+  return getApiOrStatic<{ count: number; flights: Flight[]; note?: string }>(
+    `/api/flights?${params}`,
+    "/data/flights.json"
   );
 }
 
@@ -141,44 +176,30 @@ export function fetchRoute(flightId: string) {
 }
 
 export function fetchSpecs(incompleteOnly = false) {
-  if (useStaticData()) {
-    return getJson<{
-      count: number;
-      complete: number;
-      incomplete: number;
-      specs: Spec[];
-    }>("/data/specs.json").then((d) => {
-      if (!incompleteOnly) return d;
-      const specs = (d.specs || []).filter((s) => !s.is_complete);
-      return {
-        ...d,
-        count: specs.length,
-        incomplete: specs.length,
-        complete: 0,
-        specs,
-      };
-    });
-  }
-  return getJson<{
+  return getApiOrStatic<{
     count: number;
     complete: number;
     incomplete: number;
     specs: Spec[];
-  }>(`/api/specs?incomplete_only=${incompleteOnly}`);
+  }>(`/api/specs?incomplete_only=${incompleteOnly}`, "/data/specs.json").then((d) => {
+    if (!incompleteOnly) return d;
+    const specs = (d.specs || []).filter((s) => !s.is_complete);
+    return {
+      ...d,
+      count: specs.length,
+      incomplete: specs.length,
+      complete: 0,
+      specs,
+    };
+  });
 }
 
 export function fetchEmissions() {
-  if (useStaticData()) {
-    return getJson<EmissionsPayload>("/data/emissions.json");
-  }
-  return getJson<EmissionsPayload>("/api/emissions");
+  return getApiOrStatic<EmissionsPayload>("/api/emissions", "/data/emissions.json");
 }
 
 export function fetchAnalytics() {
-  if (useStaticData()) {
-    return getJson<AnalyticsPayload>("/data/analytics.json");
-  }
-  return getJson<AnalyticsPayload>("/api/analytics");
+  return getApiOrStatic<AnalyticsPayload>("/api/analytics", "/data/analytics.json");
 }
 
 export function fetchMeta() {

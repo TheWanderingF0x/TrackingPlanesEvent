@@ -7,9 +7,7 @@ from typing import Any
 
 from tracking_planes.api import data_loader as dl
 
-DAILY_UPDATE_DISCLAIMER = (
-    "Site data is refreshed daily (or when redeployed) — not a live OpenSky feed."
-)
+DAILY_UPDATE_DISCLAIMER = "Data updates daily — not a live feed."
 
 
 def _drop_unknown(frame, col: str):
@@ -110,6 +108,86 @@ def build_analytics_payload() -> dict[str, Any]:
         else None,
     }
 
+    # Flight sample table (altitude / speed when present)
+    flight_cols = [
+        c
+        for c in (
+            "airline_name",
+            "airline_icao",
+            "aircraft_type",
+            "callsign",
+            "max_baro_altitude_m",
+            "max_velocity_ms",
+            "dep_airport_iata",
+            "arr_airport_iata",
+            "distance_km",
+        )
+        if c in flights.columns
+    ]
+    flight_rows: list[dict] = []
+    if flight_cols:
+        sample = flights
+        if "max_baro_altitude_m" in sample.columns:
+            sample = sample.sort_values("max_baro_altitude_m", ascending=False, na_position="last")
+        flight_rows = dl.df_records(sample[flight_cols], limit=80)
+
+    # OD routes (IATA when available) + names for UI toggle
+    top_routes: list[dict] = []
+    if (
+        not flights.empty
+        and "dep_airport_iata" in flights.columns
+        and "arr_airport_iata" in flights.columns
+    ):
+        from tracking_planes.api.airport_labels import resolve_airport_name
+
+        od = flights.dropna(subset=["dep_airport_iata", "arr_airport_iata"]).copy()
+        od = od[od["dep_airport_iata"].astype(str) != od["arr_airport_iata"].astype(str)]
+        if not od.empty:
+            group_cols = ["dep_airport_iata", "arr_airport_iata"]
+            for c in ("dep_airport_icao", "arr_airport_icao", "dep_airport_name", "arr_airport_name"):
+                if c in od.columns:
+                    group_cols.append(c)
+            g = (
+                od.groupby(group_cols, dropna=False)
+                .size()
+                .reset_index(name="flights")
+                .sort_values("flights", ascending=False)
+            )
+            # Collapse to IATA pair (keep first name/icao)
+            keep = ["dep_airport_iata", "arr_airport_iata", "flights"]
+            for c in ("dep_airport_icao", "arr_airport_icao", "dep_airport_name", "arr_airport_name"):
+                if c in g.columns:
+                    keep.append(c)
+            g2 = g[keep].drop_duplicates(subset=["dep_airport_iata", "arr_airport_iata"], keep="first")
+            top_routes = dl.df_records(g2, limit=25)
+            for rec in top_routes:
+                rec["dep_airport_name"] = resolve_airport_name(
+                    rec.get("dep_airport_icao"),
+                    rec.get("dep_airport_iata"),
+                    rec.get("dep_airport_name"),
+                )
+                rec["arr_airport_name"] = resolve_airport_name(
+                    rec.get("arr_airport_icao"),
+                    rec.get("arr_airport_iata"),
+                    rec.get("arr_airport_name"),
+                )
+
+    # Fleet mix: family + type (+ model) with flight counts
+    fleet_mix: list[dict] = []
+    mix_cols = [
+        c
+        for c in ("manufacturer_family", "aircraft_type", "model_name")
+        if c in flights.columns
+    ]
+    if mix_cols:
+        g = (
+            flights.groupby(mix_cols, dropna=False)
+            .size()
+            .reset_index(name="flights")
+            .sort_values("flights", ascending=False)
+        )
+        fleet_mix = dl.df_records(g, limit=40)
+
     return {
         "totals": totals,
         "by_airline_flights": by_airline_flights,
@@ -118,6 +196,9 @@ def build_analytics_payload() -> dict[str, Any]:
         "by_airline_fleet": by_airline_fleet,
         "co2_by_airline": co2_by_airline,
         "co2_by_type": co2_by_type,
+        "flight_rows": flight_rows,
+        "top_routes": top_routes,
+        "fleet_mix": fleet_mix,
         "disclaimer": (
             "UNKNOWN types excluded. Estimates are not certified. " + DAILY_UPDATE_DISCLAIMER
         ),
@@ -130,7 +211,7 @@ def build_flights_payload(limit: int = 500) -> dict[str, Any]:
         return {
             "count": 0,
             "flights": [],
-            "note": "No flight data; run phase_c_process.py or generate_sample_results.py",
+            "note": "No flight data; run process_pipeline.py or generate_sample_results.py",
         }
     cols = [
         c
@@ -144,16 +225,26 @@ def build_flights_payload(limit: int = 500) -> dict[str, Any]:
             "manufacturer_family",
             "dep_airport_icao",
             "dep_airport_iata",
+            "dep_airport_name",
             "arr_airport_icao",
             "arr_airport_iata",
+            "arr_airport_name",
             "distance_km",
             "duration_h",
+            "max_baro_altitude_m",
+            "max_velocity_ms",
             "specs_is_complete",
             "utc_date",
         ]
         if c in df.columns
     ]
-    records = dl.df_records(df[cols], limit=limit)
+    from tracking_planes.api.airport_labels import attach_airport_names_df
+
+    labeled = attach_airport_names_df(df)
+    for c in ("dep_airport_name", "arr_airport_name"):
+        if c not in cols and c in labeled.columns:
+            cols.append(c)
+    records = dl.df_records(labeled[cols], limit=limit)
     return {"count": len(records), "flights": records}
 
 
@@ -166,7 +257,7 @@ def build_emissions_payload(limit: int = 500) -> dict[str, Any]:
             "by_airline": [],
             "by_aircraft_type": [],
             "emissions": [],
-            "note": "No gold emissions yet; run phase_c_process.py",
+            "note": "No gold emissions yet; run process_pipeline.py",
             "disclaimer": DAILY_UPDATE_DISCLAIMER,
         }
     ok = df[df.get("estimate_status", "ok") == "ok"] if "estimate_status" in df.columns else df
