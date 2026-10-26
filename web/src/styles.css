@@ -306,6 +306,59 @@ th {
   background: rgba(26, 74, 107, 0.08);
 }
 
+/* Flights: fixed columns — all headers centered; short cells centered under them */
+.table-flights {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.table-flights th {
+  text-align: center;
+  vertical-align: middle;
+  padding: 0.65rem 0.5rem;
+}
+
+.table-flights td {
+  vertical-align: middle;
+  padding: 0.6rem 0.5rem;
+}
+
+.table-flights .col-flight {
+  width: 9%;
+}
+
+.table-flights .col-airline {
+  width: 15%;
+}
+
+.table-flights .col-mfr {
+  width: 12%;
+}
+
+.table-flights .col-aircraft {
+  width: 16%;
+}
+
+.table-flights .col-route {
+  width: auto;
+  white-space: normal;
+}
+
+.table-flights .col-map {
+  width: 4.5rem;
+}
+
+.table-flights td.col-flight,
+.table-flights td.col-airline,
+.table-flights td.col-mfr,
+.table-flights td.col-aircraft,
+.table-flights td.col-map {
+  text-align: center;
+}
+
+.table-flights td.col-route {
+  text-align: left;
+}
 tr:hover td {
   background: rgba(196, 92, 38, 0.05);
 }
@@ -433,12 +486,13 @@ tr:hover td {
 }
 
 .page-emissions {
-  max-width: min(1400px, 100%);
+  max-width: min(1600px, 100%);
 }
 
 .emissions-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Per flight slightly wider than the summary panels */
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: 1rem;
   align-items: stretch;
 }
@@ -461,6 +515,13 @@ tr:hover td {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   margin: 0 0 0.65rem;
+  flex: 0 0 auto;
+}
+
+.emissions-panel-note {
+  margin: -0.35rem 0 0.55rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
   flex: 0 0 auto;
 }
 
@@ -523,7 +584,12 @@ tr:hover td {
   font-variant-numeric: tabular-nums;
 }
 
-/* Per-flight: single-line compact rows so 25 fit the fixed panel */
+/* Per-flight: full-width table, balanced columns (no side gap, no Aircraft stretch) */
+.emissions-panel-paged table {
+  width: 100%;
+  table-layout: fixed;
+}
+
 .emissions-panel-paged th,
 .emissions-panel-paged td {
   white-space: nowrap;
@@ -536,14 +602,26 @@ tr:hover td {
 
 .emissions-panel-paged th:nth-child(1),
 .emissions-panel-paged td:nth-child(1) {
-  width: 28%;
+  width: 14%;
 }
 
 .emissions-panel-paged th:nth-child(2),
-.emissions-panel-paged td:nth-child(2),
+.emissions-panel-paged td:nth-child(2) {
+  width: 11%;
+  overflow: visible;
+  text-overflow: unset;
+}
+
 .emissions-panel-paged th:nth-child(3),
 .emissions-panel-paged td:nth-child(3) {
-  width: 14%;
+  width: 30%;
+  overflow: visible;
+  text-overflow: unset;
+}
+
+.emissions-panel-paged th:nth-last-child(-n + 3),
+.emissions-panel-paged td:nth-last-child(-n + 3) {
+  width: 15%;
 }
 
 .emissions-airline-code {
@@ -625,57 +703,89 @@ tr:hover td {
   color: var(--sky-deep);
 }
 
-.vbar-chart {
+.vbar-with-legend {
   display: flex;
-  align-items: flex-end;
-  gap: 0.35rem;
-  height: 220px;
-  padding: 0.25rem 0.15rem 0;
-  overflow-x: auto;
+  align-items: stretch;
+  gap: 1rem;
+  flex: 1;
+  min-height: 0;
+  flex-wrap: wrap;
 }
 
-.vbar-value {
-  font-size: 0.62rem;
-  font-variant-numeric: tabular-nums;
-  opacity: 0.75;
-  line-height: 1;
+.vbar-plot {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.4rem;
+  flex: 1 1 12rem;
+  min-width: 0;
+  min-height: 260px;
+  height: auto;
+  align-self: stretch;
+  padding: 0.15rem 0.1rem 0;
+  border-bottom: 1px solid var(--line);
 }
 
 .vbar-col {
-  flex: 1 0 2.4rem;
-  min-width: 2.2rem;
-  max-width: 3.2rem;
+  flex: 1 1 0;
+  min-width: 0.85rem;
+  max-width: 2.2rem;
   height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.35rem;
 }
 
 .vbar-fill-wrap {
-  flex: 1;
-  width: 70%;
+  width: 72%;
+  height: 100%;
   display: flex;
   align-items: flex-end;
 }
 
 .vbar-fill {
   width: 100%;
-  background: linear-gradient(180deg, var(--sky) 0%, var(--accent) 100%);
   border-radius: 2px 2px 0 0;
   animation: barRise 0.65s ease both;
   transform-origin: bottom;
 }
 
-.vbar-label {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-size: 0.68rem;
-  line-height: 1.1;
-  max-height: 4.5rem;
+.vbar-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1 1 11rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  overflow: visible;
+}
+
+.vbar-legend li {
+  display: grid;
+  grid-template-columns: 0.65rem 1fr auto;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.vbar-swatch {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.vbar-legend-label {
   overflow: hidden;
-  opacity: 0.75;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vbar-legend-val {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+  white-space: nowrap;
 }
 
 @keyframes barRise {

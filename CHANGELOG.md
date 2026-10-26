@@ -11,6 +11,11 @@
 - Flights list: exclude aircraft family Other/Unknown and type UNKNOWN (API, static export, and page).
 - Airport Full names | ICAO toggle only on Flights, Analytics, and Routes (hidden on Landing, Emissions, Specs).
 - Emissions: three fixed-height panels side-by-side; per-flight pages of 25 rows (Prev/Next). Fixed stale rows on Next — duplicate `flight_id` React keys; remount `tbody` per page. Pager shows only row range (no “p. x/y”).
+- Analytics CO₂ bars: top 10 aligned on a shared baseline; color legend (name + kg) beside/below — no vertical labels under bars.
+- Specs page removed from nav/routing; source kept at `web/src/pages/archive/SpecsPage.tsx`.
+- Aircraft display: ICAO typecodes replaced site-wide with full names via `aircraftCatalog.ts` (`scripts/generate_aircraft_catalog.py`) — Flights, Routes, Emissions, Analytics.
+- Flights table: column order Airline → Manufacturer → Aircraft (renamed from Family).
+- Landing copy: no Databricks claim; daily ADS-B snapshot wording.
 
 - Routes map: draw scheduled OD as great-circle (orange) + airport markers; ADS-B track overlay removed.
 - World airport catalog: `config/airports.csv` from OurAirports (ICAO large/medium/small, e.g. GMMX/RAK) so non‑EU OD draws on Routes; `scripts/sync_world_airports.py`; frontend loads `/data/airports.json` (thin `airportsCatalog.ts`).

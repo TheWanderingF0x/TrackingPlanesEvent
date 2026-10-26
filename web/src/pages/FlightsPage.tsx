@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchFlights, type Flight } from "../api";
+import { formatAircraftName } from "../aircraftCatalog";
 import { formatFlightRoute, useAirportLabelMode } from "../airportLabels";
 
 function norm(value?: string | null): string {
@@ -74,7 +75,7 @@ export default function FlightsPage() {
     <div className="page">
       <h1>Flights</h1>
       <p className="lede">
-        Callsign / flight number, airline, aircraft family, and estimated origin–destination.
+        Callsign / flight number, airline, manufacturer, aircraft, and estimated origin–destination.
       </p>
       {error && <div className="error">{error}</div>}
       {note && <p className="muted">{note}</p>}
@@ -106,19 +107,19 @@ export default function FlightsPage() {
       </div>
       <p className="muted">
         Showing {flights.length} of {allFlights.length} flights
-        {family ? ` · family: ${family}` : ""}
+        {family ? ` · manufacturer: ${family}` : ""}
         {airline ? ` · airline: ${airline}` : ""}
       </p>
       <div className="table-wrap">
-        <table>
+        <table className="table-flights">
           <thead>
             <tr>
-              <th>Flight</th>
-              <th>Airline</th>
-              <th>Type</th>
-              <th>Family</th>
-              <th>Route</th>
-              <th />
+              <th className="col-flight">Flight</th>
+              <th className="col-airline">Airline</th>
+              <th className="col-mfr">Manufacturer</th>
+              <th className="col-aircraft">Aircraft</th>
+              <th className="col-route">Route</th>
+              <th className="col-map" />
             </tr>
           </thead>
           <tbody key={filterKey}>
@@ -131,16 +132,21 @@ export default function FlightsPage() {
             ) : (
               flights.map((f, index) => (
                 <tr key={flightRowKey(f, index)}>
-                  <td>{f.flight_number || f.callsign}</td>
-                  <td>
+                  <td className="col-flight">{f.flight_number || f.callsign}</td>
+                  <td className="col-airline">
                     {f.airline_name} ({f.airline_icao})
                   </td>
-                  <td>{f.aircraft_type}</td>
-                  <td>{f.manufacturer_family}</td>
-                  <td className={mode === "full" ? "route-cell" : undefined}>
+                  <td className="col-mfr">{f.manufacturer_family || "—"}</td>
+                  <td
+                    className="col-aircraft"
+                    title={f.aircraft_type || undefined}
+                  >
+                    {formatAircraftName(f.aircraft_type, { family: f.manufacturer_family }) || "—"}
+                  </td>
+                  <td className={`col-route${mode === "full" ? " route-cell" : ""}`}>
                     {formatFlightRoute(f, mode)}
                   </td>
-                  <td>
+                  <td className="col-map">
                     <Link to={`/routes/${f.flight_id}`}>Map</Link>
                   </td>
                 </tr>

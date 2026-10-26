@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { formatAircraftName } from "../aircraftCatalog";
 import { fetchEmissions, type EmissionRow } from "../api";
 
 /** Rows shown per page in the Per flight panel (fixed viewport). */
@@ -72,7 +73,11 @@ export default function EmissionsPage() {
   return (
     <div className="page page-emissions">
       <h1>Emissions estimates</h1>
-      <p className="lede">Estimated fuel, CO₂ and NOx per flight.</p>
+      <p className="lede">
+        Estimated fuel, CO₂ and NOx per flight. Some estimates may be based on incomplete
+        data (aircraft specs, tracks, and related fields) because we use open-source sources
+        that can have gaps.
+      </p>
       {error && <div className="error">{error}</div>}
       {note && <p className="muted">{note}</p>}
       <div className="stats">
@@ -120,7 +125,7 @@ export default function EmissionsPage() {
                 <tr>
                   <th>Flight</th>
                   <th>Airline</th>
-                  <th>Type</th>
+                  <th>Aircraft</th>
                   <th>Fuel</th>
                   <th>CO₂</th>
                   <th>NOx</th>
@@ -139,7 +144,9 @@ export default function EmissionsPage() {
                     <tr key={`${safePage}-${i}-${r.flight_id}-${r.callsign}-${r.aircraft_type}`}>
                       <td title={flightLabel(r)}>{flightLabel(r)}</td>
                       <td title={r.airline_name || r.airline_icao}>{r.airline_icao}</td>
-                      <td>{r.aircraft_type}</td>
+                      <td title={r.aircraft_type || undefined}>
+                        {formatAircraftName(r.aircraft_type) || r.aircraft_type || "—"}
+                      </td>
                       <td>{fmtKg(r.fuel_kg_est)}</td>
                       <td>{fmtKg(r.co2_kg_est)}</td>
                       <td>{fmtKg(r.nox_kg_est, 2)}</td>
@@ -153,6 +160,9 @@ export default function EmissionsPage() {
 
         <section className="emissions-panel">
           <h2>By airline</h2>
+          <p className="muted emissions-panel-note">
+            Totals: fuel, CO₂ and NOx summed across all estimated flights for each airline.
+          </p>
           <div className="table-wrap emissions-scroll">
             <table>
               <thead>
@@ -192,11 +202,14 @@ export default function EmissionsPage() {
 
         <section className="emissions-panel">
           <h2>By aircraft type</h2>
+          <p className="muted emissions-panel-note">
+            Totals: fuel, CO₂ and NOx summed across all estimated flights for each aircraft type.
+          </p>
           <div className="table-wrap emissions-scroll">
             <table>
               <thead>
                 <tr>
-                  <th>Type</th>
+                  <th>Aircraft</th>
                   <th>Fuel</th>
                   <th>CO₂</th>
                   <th>NOx</th>
@@ -212,7 +225,9 @@ export default function EmissionsPage() {
                 ) : (
                   byType.map((r) => (
                     <tr key={r.aircraft_type}>
-                      <td>{r.aircraft_type}</td>
+                      <td title={r.aircraft_type}>
+                        {formatAircraftName(r.aircraft_type) || r.aircraft_type}
+                      </td>
                       <td>{fmtKg(r.fuel_kg_est)}</td>
                       <td>{fmtKg(r.co2_kg_est)}</td>
                       <td>{fmtKg(r.nox_kg_est, 2)}</td>

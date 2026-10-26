@@ -6,8 +6,8 @@ export default function Landing() {
       <div className="hero-inner">
         <h1>Tracking Planes</h1>
         <p>
-          European airline tracks, aircraft specs, and estimated fuel &amp; NOx —
-          results from OpenSky and a Databricks-ready lake.
+          European airline tracks, routes on the map, and estimated fuel &amp; NOx —
+          from ADS-B data, updated daily on this site.
         </p>
         <div className="cta-row">
           <Link className="btn btn-primary" to="/flights">

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { fetchSpecs, type Spec } from "../api";
+import { formatAircraftName } from "../../aircraftCatalog";
+import { fetchSpecs, type Spec } from "../../api";
+
 
 /** Prefer direct article when known; otherwise Wikipedia search. */
 const TYPECODE_WIKI: Record<string, string> = {
@@ -62,9 +64,9 @@ export default function SpecsPage() {
         <table>
           <thead>
             <tr>
-              <th>Type</th>
+              <th>Aircraft</th>
+              <th>ICAO</th>
               <th>Family</th>
-              <th>Model</th>
               <th>Seats</th>
               <th>Fuel kg/h</th>
               <th>Wikipedia</th>
@@ -73,9 +75,16 @@ export default function SpecsPage() {
           <tbody>
             {specs.map((s) => (
               <tr key={s.typecode}>
+                <td>
+                  {formatAircraftName(s.typecode, {
+                    modelName: s.model_name
+                      ? `${s.manufacturer || ""} ${s.model_name}`.trim()
+                      : null,
+                    family: s.manufacturer_family || s.manufacturer,
+                  }) || "—"}
+                </td>
                 <td>{s.typecode}</td>
                 <td>{s.manufacturer_family || s.manufacturer}</td>
-                <td>{s.model_name || "—"}</td>
                 <td>{s.seats_typical ?? "—"}</td>
                 <td>{s.fuel_burn_cruise_kg_per_h ?? "—"}</td>
                 <td>

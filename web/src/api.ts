@@ -57,7 +57,7 @@ export type AnalyticsPayload = {
     airline_name?: string;
     flights: number;
   }[];
-  by_type_flights: { aircraft_type: string; flights: number }[];
+  by_type_flights: { aircraft_type: string; model_name?: string; flights: number }[];
   by_family: { manufacturer_family: string; flights: number }[];
   by_airline_fleet: {
     airline_name?: string;

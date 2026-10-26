@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { fetchFlights, fetchRoute, type Flight } from "../api";
+import { formatAircraftName } from "../aircraftCatalog";
 import { formatFlightRoute, useAirportLabelMode } from "../airportLabels";
 import { ensureAirportsCatalog, lookupAirportCoords } from "../airportsCatalog";
 import { greatCircleLine, type LngLat } from "../geo";
@@ -259,16 +260,14 @@ export default function RoutesPage() {
         <p className={mode === "full" ? "route-meta" : undefined}>
           <strong>{meta.airline_name || meta.airline_icao}</strong>
           {(() => {
-            const type = (meta.aircraft_type || "").trim();
-            const family = (meta.manufacturer_family || "").trim();
-            const typeOk = type && type.toUpperCase() !== "UNKNOWN";
-            const familyOk = family && family.toUpperCase() !== "UNKNOWN";
-            if (!typeOk && !familyOk) return null;
+            const name = formatAircraftName(meta.aircraft_type, {
+              family: meta.manufacturer_family,
+            });
+            if (!name) return null;
             return (
               <>
                 {" · "}
-                {typeOk ? type : null}
-                {typeOk && familyOk ? ` (${family})` : familyOk ? family : null}
+                {name}
               </>
             );
           })()}

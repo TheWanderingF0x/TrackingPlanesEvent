@@ -83,6 +83,29 @@ def build_analytics_payload() -> dict[str, Any]:
             .reset_index(name="flights")
             .sort_values("flights", ascending=False)
         )
+        # Attach full display names from aircraft specs (manufacturer + model)
+        try:
+            from tracking_planes.aircraft_specs import load_aircraft_specs
+
+            specs = load_aircraft_specs()
+            if not specs.empty:
+                name_map = {
+                    str(r.typecode).upper(): " ".join(
+                        p
+                        for p in (
+                            str(r.manufacturer or "").strip(),
+                            str(r.model_name or "").strip(),
+                        )
+                        if p
+                    ).strip()
+                    for r in specs.itertuples(index=False)
+                }
+                g = g.copy()
+                g["model_name"] = g["aircraft_type"].astype(str).str.upper().map(
+                    lambda t: (name_map.get(t) or None)
+                )
+        except Exception:
+            pass
         by_type_flights = dl.df_records(g, limit=20)
 
     co2_by_airline: list[dict] = []
@@ -272,7 +295,12 @@ def build_emissions_payload(limit: int = 500) -> dict[str, Any]:
             "by_aircraft_type": [],
             "emissions": [],
             "note": "No gold emissions yet; run process_pipeline.py",
-            "disclaimer": DAILY_UPDATE_DISCLAIMER,
+            "disclaimer": (
+                "Fuel, CO2 and NOx are ICEC-inspired model estimates (not certified). "
+                "Some estimates may rely on incomplete inputs — aircraft specs, tracks, "
+                "and related fields often come from open-source sources and can have gaps. "
+                + DAILY_UPDATE_DISCLAIMER
+            ),
         }
     ok = df[df.get("estimate_status", "ok") == "ok"] if "estimate_status" in df.columns else df
     totals = {
@@ -324,6 +352,8 @@ def build_emissions_payload(limit: int = 500) -> dict[str, Any]:
         "emissions": dl.df_records(show, limit=limit),
         "disclaimer": (
             "Fuel, CO2 and NOx are ICEC-inspired model estimates (not certified). "
+            "Some estimates may rely on incomplete inputs — aircraft specs, tracks, "
+            "and related fields often come from open-source sources and can have gaps. "
             + DAILY_UPDATE_DISCLAIMER
         ),
     }

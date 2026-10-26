@@ -1,8 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
+import { formatAircraftName } from "../aircraftCatalog";
 import { fetchAnalytics, fetchMeta, type AnalyticsPayload } from "../api";
 import { formatAirportSide, useAirportLabelMode } from "../airportLabels";
 
 const DONUT_COLORS = ["#1a4a6b", "#c45c26", "#2f6b4f", "#9a6b16", "#5b7c99"];
+
+const BAR_COLORS = [
+  "#1a4a6b",
+  "#c45c26",
+  "#2f6b4f",
+  "#9a6b16",
+  "#5b7c99",
+  "#6b3a5b",
+  "#3d6b8a",
+  "#a85a2e",
+  "#4a7a5c",
+  "#7a6b2f",
+];
 
 function formatUpdated(iso: string): string {
   const d = new Date(iso);
@@ -26,39 +40,65 @@ function VerticalBars({
   labelKey: string;
   valueKey: string;
 }) {
-  const max = Math.max(1, ...items.map((i) => Number(i[valueKey] ?? 0)));
-  const slice = items.slice(0, 12);
+  const slice = items.slice(0, 10);
+  const max = Math.max(1, ...slice.map((i) => Number(i[valueKey] ?? 0)));
   return (
-    <div className="vbar-chart" role="img" aria-label="CO2 by airline">
-      {slice.map((item, idx) => {
-        const label = String(item[labelKey] ?? "—");
-        const value = Number(item[valueKey] ?? 0);
-        const pct = Math.max(4, Math.round((value / max) * 100));
-        return (
-          <div className="vbar-col" key={`${label}-${idx}`} title={`${label}: ${Math.round(value)} kg CO₂`}>
-            <div className="vbar-value">{Math.round(value).toLocaleString()}</div>
-            <div className="vbar-fill-wrap">
-              <div className="vbar-fill" style={{ height: `${pct}%` }} />
+    <div className="vbar-with-legend" role="img" aria-label="CO2 by airline top 10">
+      <div className="vbar-plot">
+        {slice.map((item, idx) => {
+          const label = String(item[labelKey] ?? "—");
+          const value = Number(item[valueKey] ?? 0);
+          const pct = Math.max(3, Math.round((value / max) * 100));
+          const color = BAR_COLORS[idx % BAR_COLORS.length];
+          return (
+            <div
+              className="vbar-col"
+              key={`${label}-${idx}`}
+              title={`${label}: ${Math.round(value).toLocaleString()} kg CO₂`}
+            >
+              <div className="vbar-fill-wrap">
+                <div
+                  className="vbar-fill"
+                  style={{ height: `${pct}%`, background: color }}
+                />
+              </div>
             </div>
-            <span className="vbar-label">{label}</span>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
+      <ol className="vbar-legend">
+        {slice.map((item, idx) => {
+          const label = String(item[labelKey] ?? "—");
+          const value = Number(item[valueKey] ?? 0);
+          return (
+            <li key={`${label}-leg-${idx}`}>
+              <span
+                className="vbar-swatch"
+                style={{ background: BAR_COLORS[idx % BAR_COLORS.length] }}
+              />
+              <span className="vbar-legend-label">{label}</span>
+              <span className="vbar-legend-val">
+                {Math.round(value).toLocaleString()} kg
+              </span>
+            </li>
+          );
+        })}
+      </ol>
     </div>
   );
 }
 
 function DonutChart({
   items,
-  labelKey,
-  valueKey,
+  centerLabel = "Top",
+  centerSub = "",
+  valueSuffix = "",
 }: {
   items: { label: string; value: number }[];
-  labelKey?: string;
-  valueKey?: string;
+  centerLabel?: string;
+  centerSub?: string;
+  valueSuffix?: string;
 }) {
-  void labelKey;
-  void valueKey;
   const total = items.reduce((s, i) => s + i.value, 0) || 1;
   const r = 54;
   const c = 2 * Math.PI * r;
@@ -87,11 +127,13 @@ function DonutChart({
           return el;
         })}
         <text x="70" y="68" textAnchor="middle" className="donut-center-label">
-          CO₂
+          {centerLabel}
         </text>
-        <text x="70" y="84" textAnchor="middle" className="donut-center-sub">
-          kg
-        </text>
+        {centerSub ? (
+          <text x="70" y="84" textAnchor="middle" className="donut-center-sub">
+            {centerSub}
+          </text>
+        ) : null}
       </svg>
       <ul className="donut-legend">
         {items.map((item, idx) => (
@@ -102,7 +144,8 @@ function DonutChart({
             />
             <span className="donut-legend-label">{item.label}</span>
             <span className="donut-legend-val">
-              {Math.round(item.value).toLocaleString()} kg
+              {Math.round(item.value).toLocaleString()}
+              {valueSuffix ? ` ${valueSuffix}` : ""}
             </span>
           </li>
         ))}
@@ -130,11 +173,14 @@ export default function AnalyticsPage() {
     });
   }, []);
 
-  const top5Co2 = useMemo(() => {
-    if (!data?.co2_by_airline?.length) return [];
-    return data.co2_by_airline.slice(0, 5).map((r) => ({
-      label: String(r.airline_name || r.airline_icao || "—"),
-      value: Number(r.co2_kg_est ?? 0),
+  const top5Aircraft = useMemo(() => {
+    if (!data?.by_type_flights?.length) return [];
+    return data.by_type_flights.slice(0, 5).map((r) => ({
+      label:
+        formatAircraftName(r.aircraft_type, { modelName: r.model_name }) ||
+        r.aircraft_type ||
+        "—",
+      value: Number(r.flights ?? 0),
     }));
   }, [data]);
 
@@ -193,7 +239,9 @@ export default function AnalyticsPage() {
                     {(data.flight_rows || []).map((r, i) => (
                       <tr key={`${r.callsign}-${i}`}>
                         <td>{r.airline_name || r.airline_icao || "—"}</td>
-                        <td>{r.aircraft_type || "—"}</td>
+                        <td title={r.aircraft_type || undefined}>
+                          {formatAircraftName(r.aircraft_type) || r.aircraft_type || "—"}
+                        </td>
                         <td>{r.callsign || "—"}</td>
                         <td>
                           {r.max_baro_altitude_m != null
@@ -214,7 +262,7 @@ export default function AnalyticsPage() {
 
             <section className="dash-panel">
               <h2>CO₂ by airline (kg)</h2>
-              <p className="chart-unit">est. CO₂ (kg)</p>
+              <p className="chart-unit">Top 10 · est. CO₂ (kg)</p>
               <VerticalBars
                 items={data.co2_by_airline as Record<string, unknown>[]}
                 labelKey="airline_name"
@@ -231,7 +279,6 @@ export default function AnalyticsPage() {
                       <th>Airline</th>
                       <th>Manufacturer</th>
                       <th>Aircraft</th>
-                      <th>Model</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -239,8 +286,14 @@ export default function AnalyticsPage() {
                       <tr key={`${r.airline_icao}-${r.aircraft_type}-${i}`}>
                         <td>{r.airline_name || r.airline_icao}</td>
                         <td>{r.manufacturer_family || "—"}</td>
-                        <td>{r.aircraft_type}</td>
-                        <td>{r.model_name || "—"}</td>
+                        <td title={r.aircraft_type || undefined}>
+                          {formatAircraftName(r.aircraft_type, {
+                            modelName: r.model_name
+                              ? `${r.manufacturer_family || ""} ${r.model_name}`.trim()
+                              : null,
+                            family: r.manufacturer_family,
+                          }) || "—"}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -249,11 +302,16 @@ export default function AnalyticsPage() {
             </section>
 
             <section className="dash-panel">
-              <h2>Top 5 airlines by CO₂ (kg)</h2>
-              {top5Co2.length ? (
-                <DonutChart items={top5Co2} />
+              <h2>Top 5 aircraft (flights)</h2>
+              {top5Aircraft.length ? (
+                <DonutChart
+                  items={top5Aircraft}
+                  centerLabel="A/C"
+                  centerSub="top 5"
+                  valueSuffix="flights"
+                />
               ) : (
-                <p className="muted">No emissions totals yet.</p>
+                <p className="muted">No aircraft type counts yet.</p>
               )}
             </section>
 
@@ -264,8 +322,7 @@ export default function AnalyticsPage() {
                   <thead>
                     <tr>
                       <th>Family</th>
-                      <th>Type</th>
-                      <th>Model</th>
+                      <th>Aircraft</th>
                       <th>Flights (count)</th>
                     </tr>
                   </thead>
@@ -273,8 +330,14 @@ export default function AnalyticsPage() {
                     {(data.fleet_mix || []).map((r, i) => (
                       <tr key={`${r.manufacturer_family}-${r.aircraft_type}-${i}`}>
                         <td>{r.manufacturer_family || "—"}</td>
-                        <td>{r.aircraft_type || "—"}</td>
-                        <td>{r.model_name || "—"}</td>
+                        <td title={r.aircraft_type || undefined}>
+                          {formatAircraftName(r.aircraft_type, {
+                            modelName: r.model_name
+                              ? `${r.manufacturer_family || ""} ${r.model_name}`.trim()
+                              : null,
+                            family: r.manufacturer_family,
+                          }) || "—"}
+                        </td>
                         <td>{r.flights}</td>
                       </tr>
                     ))}
