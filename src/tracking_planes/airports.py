@@ -1,4 +1,4 @@
-"""European airports reference + nearest-airport OD inference."""
+"""Airports reference + nearest-airport OD inference."""
 
 from __future__ import annotations
 
@@ -9,7 +9,11 @@ import pandas as pd
 
 from tracking_planes.config import PROJECT_ROOT
 
-DEFAULT_AIRPORTS_CSV = PROJECT_ROOT / "config" / "airports_europe.csv"
+# World catalog (OurAirports); fall back to legacy Europe-only CSV.
+_WORLD = PROJECT_ROOT / "config" / "airports.csv"
+_EUROPE = PROJECT_ROOT / "config" / "airports_europe.csv"
+DEFAULT_AIRPORTS_CSV = _WORLD if _WORLD.is_file() else _EUROPE
+
 # Max distance (km) to accept a nearest-airport match
 DEFAULT_MAX_KM = 80.0
 

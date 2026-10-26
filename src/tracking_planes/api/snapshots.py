@@ -16,6 +16,20 @@ def _drop_unknown(frame, col: str):
     return frame[frame[col].astype(str).str.upper().str.strip() != "UNKNOWN"]
 
 
+def drop_unknown_or_other_aircraft(frame):
+    """Exclude Unknown/Other manufacturer and UNKNOWN aircraft types from Flights list."""
+    if frame.empty:
+        return frame
+    out = frame
+    if "aircraft_type" in out.columns:
+        t = out["aircraft_type"].astype(str).str.upper().str.strip()
+        out = out[~t.isin({"", "UNKNOWN", "NAN", "NONE", "NULL"})]
+    if "manufacturer_family" in out.columns:
+        f = out["manufacturer_family"].astype(str).str.upper().str.strip()
+        out = out[~f.isin({"", "UNKNOWN", "OTHER", "NAN", "NONE", "NULL"})]
+    return out
+
+
 def build_analytics_payload() -> dict[str, Any]:
     flights = _drop_unknown(dl.load_flights(), "aircraft_type")
     emissions = _drop_unknown(dl.load_emissions(), "aircraft_type")
@@ -206,7 +220,7 @@ def build_analytics_payload() -> dict[str, Any]:
 
 
 def build_flights_payload(limit: int = 500) -> dict[str, Any]:
-    df = dl.load_flights()
+    df = drop_unknown_or_other_aircraft(dl.load_flights())
     if df.empty:
         return {
             "count": 0,

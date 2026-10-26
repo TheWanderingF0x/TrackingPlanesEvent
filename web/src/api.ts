@@ -132,12 +132,15 @@ export type EmissionsPayload = {
   note?: string;
 };
 
-/** Production / Vercel uses static JSON; local vite proxy uses FastAPI unless VITE_USE_STATIC=1. */
+/** Production / Vercel uses static JSON. Set VITE_USE_STATIC=1 to force static in dev. */
 function useStaticData(): boolean {
   if (import.meta.env.VITE_USE_STATIC === "1") return true;
   if (import.meta.env.VITE_USE_STATIC === "0") return false;
   return import.meta.env.PROD;
 }
+
+/** Hit FastAPI directly (bypass Vite proxy) so a down API does not spam proxy errors. */
+const LIVE_API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) || "http://127.0.0.1:8000";
 
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(path);
@@ -147,16 +150,28 @@ async function getJson<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-/** Prefer live API in dev; if FastAPI is down, use Phase C static JSON. */
+async function tryLiveApi<T>(apiPath: string): Promise<T | null> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 900);
+  try {
+    const res = await fetch(`${LIVE_API_BASE}${apiPath}`, { signal: ctrl.signal });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Prefer live FastAPI when up; otherwise web/public/data/*.json (no Vite /api proxy). */
 async function getApiOrStatic<T>(apiPath: string, staticPath: string): Promise<T> {
   if (useStaticData()) {
     return getJson<T>(staticPath);
   }
-  try {
-    return await getJson<T>(apiPath);
-  } catch {
-    return getJson<T>(staticPath);
-  }
+  const live = await tryLiveApi<T>(apiPath);
+  if (live != null) return live;
+  return getJson<T>(staticPath);
 }
 
 export function fetchFlights(params: URLSearchParams = new URLSearchParams()) {
@@ -166,13 +181,16 @@ export function fetchFlights(params: URLSearchParams = new URLSearchParams()) {
   );
 }
 
-export function fetchRoute(flightId: string) {
-  // Routes need live track points — not in static snapshot; call API when available
-  return getJson<{
+export async function fetchRoute(flightId: string) {
+  // Routes need live track points — try FastAPI directly; no static fallback
+  const path = `/api/routes/${encodeURIComponent(flightId)}`;
+  const live = await tryLiveApi<{
     flight: Flight;
     track: { longitude: number; latitude: number; baro_altitude?: number; velocity?: number }[];
     disclaimer: string;
-  }>(`/api/routes/${encodeURIComponent(flightId)}`);
+  }>(path);
+  if (live) return live;
+  throw new Error("Route track API is not running (start: python scripts/run_api.py)");
 }
 
 export function fetchSpecs(incompleteOnly = false) {

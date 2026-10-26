@@ -106,7 +106,7 @@ export function formatAirportSide(side: AirportSide, mode: AirportLabelMode): st
   if (mode === "icao") {
     return icao || iata || "?";
   }
-  // Full-names: prefer payload name, else catalog from airports_europe.csv
+  // Full-names: prefer payload name, else catalog from config/airports.csv
   if (rawName && !looksLikeCode(rawName)) {
     return rawName;
   }

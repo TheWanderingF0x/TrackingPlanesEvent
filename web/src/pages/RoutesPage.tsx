@@ -4,6 +4,9 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { fetchFlights, fetchRoute, type Flight } from "../api";
 import { formatFlightRoute, useAirportLabelMode } from "../airportLabels";
+import { ensureAirportsCatalog, lookupAirportCoords } from "../airportsCatalog";
+import { greatCircleLine, type LngLat } from "../geo";
+
 
 function airportCode(f: Flight, which: "dep" | "arr"): string {
   const iata = which === "dep" ? f.dep_airport_iata : f.arr_airport_iata;
@@ -21,6 +24,105 @@ function hasDisplayableRoute(f: Flight): boolean {
   return true;
 }
 
+function odLine(f: Flight): LngLat[] | null {
+  const dep = lookupAirportCoords(f.dep_airport_icao, f.dep_airport_iata);
+  const arr = lookupAirportCoords(f.arr_airport_icao, f.arr_airport_iata);
+  if (!dep || !arr) return null;
+  return greatCircleLine(dep.lon, dep.lat, arr.lon, arr.lat, 96);
+}
+
+function clearMapLayers(map: maplibregl.Map) {
+  for (const id of ["od-line", "adsb-track", "airports"]) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  for (const id of ["od-line", "adsb-track", "airports"]) {
+    if (map.getSource(id)) map.removeSource(id);
+  }
+}
+
+function drawRoute(
+  map: maplibregl.Map,
+  opts: {
+    odCoords: LngLat[] | null;
+    dep?: { lon: number; lat: number } | null;
+    arr?: { lon: number; lat: number } | null;
+  }
+) {
+  const { odCoords, dep, arr } = opts;
+  clearMapLayers(map);
+  map.resize();
+
+  const bounds = new maplibregl.LngLatBounds();
+  let hasBounds = false;
+
+  if (odCoords && odCoords.length >= 2) {
+    map.addSource("od-line", {
+      type: "geojson",
+      data: {
+        type: "Feature",
+        properties: {},
+        geometry: { type: "LineString", coordinates: odCoords },
+      },
+    });
+    map.addLayer({
+      id: "od-line",
+      type: "line",
+      source: "od-line",
+      paint: {
+        "line-color": "#c45c26",
+        "line-width": 3.5,
+        "line-opacity": 0.95,
+      },
+    });
+    odCoords.forEach((c) => {
+      bounds.extend(c);
+      hasBounds = true;
+    });
+  }
+
+  const points: GeoJSON.Feature[] = [];
+  if (dep) {
+    points.push({
+      type: "Feature",
+      properties: { role: "dep" },
+      geometry: { type: "Point", coordinates: [dep.lon, dep.lat] },
+    });
+    bounds.extend([dep.lon, dep.lat]);
+    hasBounds = true;
+  }
+  if (arr) {
+    points.push({
+      type: "Feature",
+      properties: { role: "arr" },
+      geometry: { type: "Point", coordinates: [arr.lon, arr.lat] },
+    });
+    bounds.extend([arr.lon, arr.lat]);
+    hasBounds = true;
+  }
+  if (points.length) {
+    map.addSource("airports", {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: points },
+    });
+    map.addLayer({
+      id: "airports",
+      type: "circle",
+      source: "airports",
+      paint: {
+        "circle-radius": 6,
+        "circle-color": "#0b1c2c",
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#f2f7fb",
+      },
+    });
+  }
+
+  if (hasBounds && !bounds.isEmpty()) {
+    map.fitBounds(bounds, { padding: 56, duration: 800, maxZoom: 6 });
+  }
+  requestAnimationFrame(() => map.resize());
+}
+
 export default function RoutesPage() {
   const { mode } = useAirportLabelMode();
   const { flightId } = useParams();
@@ -33,7 +135,6 @@ export default function RoutesPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // High limit so OD-complete flights are not cut off by the default API 500 cap
     fetchFlights(new URLSearchParams({ limit: "2000" }))
       .then((d) => {
         const usable = (d.flights || []).filter(hasDisplayableRoute);
@@ -51,58 +152,71 @@ export default function RoutesPage() {
 
   useEffect(() => {
     if (!flightId) return;
-    fetchRoute(flightId)
-      .then((data) => {
-        setMeta(data.flight);
-        setDisclaimer(data.disclaimer);
-        const coords = data.track
-          .filter((p) => p.longitude != null && p.latitude != null)
-          .map((p) => [p.longitude, p.latitude] as [number, number]);
+    setError(null);
 
-        if (!mapRef.current) return;
-        if (!mapObj.current) {
-          mapObj.current = new maplibregl.Map({
-            container: mapRef.current,
-            style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
-            center: coords[0] || [8, 48],
-            zoom: 4,
-          });
-        }
-        const map = mapObj.current;
-        const draw = () => {
-          map.resize();
-          if (map.getLayer("route-line")) map.removeLayer("route-line");
-          if (map.getSource("route")) map.removeSource("route");
-          if (coords.length < 2) return;
-          map.addSource("route", {
-            type: "geojson",
-            data: {
-              type: "Feature",
-              properties: {},
-              geometry: { type: "LineString", coordinates: coords },
-            },
-          });
-          map.addLayer({
-            id: "route-line",
-            type: "line",
-            source: "route",
-            paint: {
-              "line-color": "#c45c26",
-              "line-width": 3,
-            },
-          });
-          const bounds = coords.reduce(
-            (b, c) => b.extend(c),
-            new maplibregl.LngLatBounds(coords[0], coords[0])
+    const fromList = flights.find((f) => f.flight_id === flightId) || null;
+    if (fromList) setMeta(fromList);
+
+    let cancelled = false;
+
+    const paint = (flight: Flight, note: string) => {
+      if (cancelled) return;
+
+      setMeta(flight);
+      const odCoords = odLine(flight);
+      const dep = lookupAirportCoords(flight.dep_airport_icao, flight.dep_airport_iata);
+      const arr = lookupAirportCoords(flight.arr_airport_icao, flight.arr_airport_iata);
+      setDisclaimer(
+        odCoords
+          ? note
+          : "Route line unavailable — departure or arrival airport not in the world catalog yet."
+      );
+
+      if (!mapRef.current) return;
+      if (!mapObj.current) {
+        const center: LngLat =
+          odCoords?.[Math.floor((odCoords.length || 1) / 2)] || [8, 48];
+        mapObj.current = new maplibregl.Map({
+          container: mapRef.current,
+          style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+          center,
+          zoom: 3,
+        });
+      }
+      const map = mapObj.current;
+      const run = () =>
+        drawRoute(map, {
+          odCoords,
+          dep: dep ? { lon: dep.lon, lat: dep.lat } : null,
+          arr: arr ? { lon: arr.lon, lat: arr.lat } : null,
+        });
+      if (map.isStyleLoaded()) run();
+      else map.once("load", run);
+    };
+
+    void ensureAirportsCatalog().then(() => {
+      if (cancelled) return;
+      fetchRoute(flightId)
+        .then((data) => {
+          paint(
+            data.flight,
+            data.disclaimer ||
+              "Scheduled origin→destination as a great-circle path. Not an official airline schedule."
           );
-          map.fitBounds(bounds, { padding: 48, duration: 800 });
-          requestAnimationFrame(() => map.resize());
-        };
-        if (map.isStyleLoaded()) draw();
-        else map.once("load", draw);
-      })
-      .catch((e: Error) => setError(e.message));
-  }, [flightId]);
+        })
+        .catch(() => {
+          if (!fromList) {
+            setError("Could not load route (API down and flight not in snapshot).");
+            return;
+          }
+          paint(fromList, "Scheduled origin→destination (great circle).");
+        });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [flightId, flights]);
 
   useEffect(() => {
     const onResize = () => mapObj.current?.resize();
@@ -164,9 +278,7 @@ export default function RoutesPage() {
       )}
       <div className="map-panel" ref={mapRef} />
       <p className="disclaimer">
-        {disclaimer || "Select a flight to load its track."}
-        {" "}
-        Some data may be incomplete (aircraft type, airports, or track coverage).
+        {disclaimer || "Select a flight to load its route."}
       </p>
     </div>
   );

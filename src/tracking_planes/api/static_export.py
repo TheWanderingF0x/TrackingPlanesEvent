@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 def export_static_site_data(out_dir: Path) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
-    # Keep frontend Full-names catalog in sync with airports_europe.csv
+    # Keep frontend Full-names / Routes coords catalog in sync with config/airports.csv
     gen = PROJECT_ROOT / "scripts" / "generate_airports_catalog.py"
     if gen.is_file():
         subprocess.run([sys.executable, str(gen)], cwd=str(PROJECT_ROOT), check=False)

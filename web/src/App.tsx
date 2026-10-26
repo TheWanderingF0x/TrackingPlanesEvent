@@ -1,4 +1,4 @@
-import { NavLink, Route, Routes } from "react-router-dom";
+import { NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { AirportLabelProvider, AirportLabelToggle } from "./airportLabels";
 import Landing from "./pages/Landing";
 import FlightsPage from "./pages/FlightsPage";
@@ -7,16 +7,24 @@ import SpecsPage from "./pages/SpecsPage";
 import EmissionsPage from "./pages/EmissionsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 
-export default function App() {
+function showAirportLabelToggle(pathname: string): boolean {
   return (
-    <AirportLabelProvider>
+    pathname.startsWith("/flights") ||
+    pathname.startsWith("/analytics") ||
+    pathname.startsWith("/routes")
+  );
+}
+
+function AppShell() {
+  const { pathname } = useLocation();
+  return (
       <div className="shell">
         <header className="topnav">
           <NavLink to="/" className="brand">
             Tracking Planes
           </NavLink>
           <div className="topnav-end">
-            <AirportLabelToggle />
+            {showAirportLabelToggle(pathname) ? <AirportLabelToggle /> : null}
             <nav className="nav-links">
               <NavLink to="/flights" className={({ isActive }) => (isActive ? "active" : "")}>
                 Flights
@@ -48,6 +56,13 @@ export default function App() {
           </Routes>
         </main>
       </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AirportLabelProvider>
+      <AppShell />
     </AirportLabelProvider>
   );
 }

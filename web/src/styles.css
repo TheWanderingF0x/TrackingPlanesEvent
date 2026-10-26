@@ -432,6 +432,161 @@ tr:hover td {
   max-width: 1280px;
 }
 
+.page-emissions {
+  max-width: min(1400px, 100%);
+}
+
+.emissions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.emissions-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  /* Same fixed height for all 3 panels — pagination replaces rows, does not grow the page */
+  height: min(70vh, 740px);
+  padding: 0.75rem 0.85rem 0.85rem;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--line);
+  box-sizing: border-box;
+}
+
+.emissions-panel h2 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0 0 0.65rem;
+  flex: 0 0 auto;
+}
+
+.emissions-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.emissions-panel-head h2 {
+  margin: 0;
+}
+
+/* Airline / type: scroll inside the fixed panel */
+.emissions-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/*
+  Per flight: one page of 25 rows in a fixed box.
+  Prev/Next swaps the slice — no inner scrollbar, height does not grow.
+*/
+.emissions-paged {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.emissions-panel .table-wrap {
+  overflow-x: hidden;
+}
+
+.emissions-panel table {
+  table-layout: fixed;
+  width: 100%;
+  font-size: 0.78rem;
+}
+
+.emissions-panel th,
+.emissions-panel td {
+  white-space: normal;
+  overflow-wrap: break-word;
+  padding: 0.28rem 0.35rem;
+  vertical-align: top;
+}
+
+/* Metric columns (Fuel / CO₂ / NOx) stay compact */
+.emissions-panel th:nth-last-child(-n + 3),
+.emissions-panel td:nth-last-child(-n + 3) {
+  white-space: nowrap;
+  width: 4.2rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Per-flight: single-line compact rows so 25 fit the fixed panel */
+.emissions-panel-paged th,
+.emissions-panel-paged td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  padding: 0.22rem 0.3rem;
+  line-height: 1.25;
+}
+
+.emissions-panel-paged th:nth-child(1),
+.emissions-panel-paged td:nth-child(1) {
+  width: 28%;
+}
+
+.emissions-panel-paged th:nth-child(2),
+.emissions-panel-paged td:nth-child(2),
+.emissions-panel-paged th:nth-child(3),
+.emissions-panel-paged td:nth-child(3) {
+  width: 14%;
+}
+
+.emissions-airline-code {
+  display: block;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.emissions-airline-name {
+  display: block;
+  font-size: 0.78rem;
+  opacity: 0.75;
+  line-height: 1.25;
+  margin-top: 0.1rem;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+}
+
+.pager button {
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 0.28rem 0.55rem;
+  border-radius: 2px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pager button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pager button:not(:disabled):hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+
 .dash-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -586,6 +741,16 @@ tr:hover td {
 .donut-legend-val {
   font-variant-numeric: tabular-nums;
   opacity: 0.8;
+}
+
+@media (max-width: 1100px) {
+  .emissions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .emissions-panel {
+    height: min(60vh, 560px);
+  }
 }
 
 @media (max-width: 900px) {

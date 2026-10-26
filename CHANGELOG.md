@@ -6,6 +6,15 @@
 - Docs: only active guide is [`SETUP_AND_RUN.md`](docs/SETUP_AND_RUN.md); older docs moved to [`docs/archive/`](docs/archive/).
 - Scripts renamed: `phase_c_publish.ps1` → `process_and_publish.ps1`; `phase_c_process` → `process_pipeline` (.py / .ps1).
 - adsb.lol: stop on HTTP 429 (backoff then abort); prefer paired cache over live circles/hex; default `ADSB_MAX_LIVE_LOOKUPS=0`.
+- Flights filters: client-side only (static JSON ignores query params); show match count; empty-state when nothing matches.
+- Flights table: unique React row keys (duplicate `flight_id`s were leaving stale Airbus rows after filtering to Cessna/etc.); remount `tbody` on filter change.
+- Flights list: exclude aircraft family Other/Unknown and type UNKNOWN (API, static export, and page).
+- Airport Full names | ICAO toggle only on Flights, Analytics, and Routes (hidden on Landing, Emissions, Specs).
+- Emissions: three fixed-height panels side-by-side; per-flight pages of 25 rows (Prev/Next). Fixed stale rows on Next — duplicate `flight_id` React keys; remount `tbody` per page. Pager shows only row range (no “p. x/y”).
+
+- Routes map: draw scheduled OD as great-circle (orange) + airport markers; ADS-B track overlay removed.
+- World airport catalog: `config/airports.csv` from OurAirports (ICAO large/medium/small, e.g. GMMX/RAK) so non‑EU OD draws on Routes; `scripts/sync_world_airports.py`; frontend loads `/data/airports.json` (thin `airportsCatalog.ts`).
+- Dev web: call FastAPI at `127.0.0.1:8000` directly (bypass Vite `/api` proxy) so a down API falls back to `public/data` without proxy error spam.
 - **Callsign OD:** Spark resolves scheduled origin/destination via adsb.lol VRS + adsbdb (cache `callsign_routes.parquet`); runs on PC in `phase_c_process` after phone/PC raw. Env: `CALLSIGN_OD_ENRICH`, `--no-callsign-od`.
 - Flights page: removed Specs column; disclaimer updated for callsign routes.
 - Airport labels: top-nav **Full names | ICAO** toggle (persisted). Full-names mode shows complete place/airport wording only (no FRA/LHR); ICAO mode shows codes. Expanded `airports_europe.csv` official-style names; API/export prefer those over acronyms.

@@ -1,209 +1,49 @@
-/** Auto-generated from config/airports_europe.csv — do not edit by hand. */
-/** Run: python scripts/generate_airports_catalog.py */
+/** Auto-generated — do not edit by hand. */
+/** Run: python scripts/sync_world_airports.py && python scripts/generate_airports_catalog.py */
 
-export const AIRPORTS_BY_CODE: Record<string, string> = {
-  "EGLL": "London Heathrow Airport",
-  "LHR": "London Heathrow Airport",
-  "EGKK": "London Gatwick Airport",
-  "LGW": "London Gatwick Airport",
-  "EGSS": "London Stansted Airport",
-  "STN": "London Stansted Airport",
-  "EHAM": "Amsterdam Airport Schiphol",
-  "AMS": "Amsterdam Airport Schiphol",
-  "EDDF": "Frankfurt Airport",
-  "FRA": "Frankfurt Airport",
-  "EDDM": "Munich Airport",
-  "MUC": "Munich Airport",
-  "EDDL": "Düsseldorf Airport",
-  "DUS": "Düsseldorf Airport",
-  "EDDB": "Berlin Brandenburg Airport",
-  "BER": "Berlin Brandenburg Airport",
-  "LFPG": "Paris Charles de Gaulle Airport",
-  "CDG": "Paris Charles de Gaulle Airport",
-  "LFPO": "Paris Orly Airport",
-  "ORY": "Paris Orly Airport",
-  "LEMD": "Madrid-Barajas Adolfo Suárez Airport",
-  "MAD": "Madrid-Barajas Adolfo Suárez Airport",
-  "LEBL": "Barcelona–El Prat Josep Tarradellas Airport",
-  "BCN": "Barcelona–El Prat Josep Tarradellas Airport",
-  "LEMG": "Málaga–Costa del Sol Airport",
-  "AGP": "Málaga–Costa del Sol Airport",
-  "LEAL": "Alicante–Elche Miguel Hernández Airport",
-  "ALC": "Alicante–Elche Miguel Hernández Airport",
-  "LIRF": "Rome Fiumicino Leonardo da Vinci Airport",
-  "FCO": "Rome Fiumicino Leonardo da Vinci Airport",
-  "LIMC": "Milan Malpensa Airport",
-  "MXP": "Milan Malpensa Airport",
-  "LIME": "Milan Bergamo Orio al Serio Airport",
-  "BGY": "Milan Bergamo Orio al Serio Airport",
-  "LSGG": "Geneva Airport",
-  "GVA": "Geneva Airport",
-  "LSZH": "Zurich Airport",
-  "ZRH": "Zurich Airport",
-  "LOWW": "Vienna International Airport",
-  "VIE": "Vienna International Airport",
-  "LKPR": "Prague Václav Havel Airport",
-  "PRG": "Prague Václav Havel Airport",
-  "EPWA": "Warsaw Chopin Airport",
-  "WAW": "Warsaw Chopin Airport",
-  "EKCH": "Copenhagen Airport Kastrup",
-  "CPH": "Copenhagen Airport Kastrup",
-  "ENGM": "Oslo Airport Gardermoen",
-  "OSL": "Oslo Airport Gardermoen",
-  "ESSA": "Stockholm Arlanda Airport",
-  "ARN": "Stockholm Arlanda Airport",
-  "EFHK": "Helsinki Airport",
-  "HEL": "Helsinki Airport",
-  "LPPT": "Lisbon Humberto Delgado Airport",
-  "LIS": "Lisbon Humberto Delgado Airport",
-  "LPPR": "Porto Francisco Sá Carneiro Airport",
-  "OPO": "Porto Francisco Sá Carneiro Airport",
-  "LGAV": "Athens Eleftherios Venizelos Airport",
-  "ATH": "Athens Eleftherios Venizelos Airport",
-  "LHBP": "Budapest Ferenc Liszt International Airport",
-  "BUD": "Budapest Ferenc Liszt International Airport",
-  "LRBS": "Bucharest Băneasa Aurel Vlaicu Airport",
-  "BBU": "Bucharest Băneasa Aurel Vlaicu Airport",
-  "LROP": "Bucharest Henri Coandă International Airport",
-  "OTP": "Bucharest Henri Coandă International Airport",
-  "LBSF": "Sofia Airport",
-  "SOF": "Sofia Airport",
-  "LDZA": "Zagreb Franjo Tuđman Airport",
-  "ZAG": "Zagreb Franjo Tuđman Airport",
-  "LJLJ": "Ljubljana Jože Pučnik Airport",
-  "LJU": "Ljubljana Jože Pučnik Airport",
-  "EBBR": "Brussels Airport",
-  "BRU": "Brussels Airport",
-  "EIDW": "Dublin Airport",
-  "DUB": "Dublin Airport",
-  "BIKF": "Keflavík International Airport",
-  "KEF": "Keflavík International Airport",
-  "LGTS": "Thessaloniki Airport Macedonia",
-  "SKG": "Thessaloniki Airport Macedonia",
-  "LTFM": "Istanbul Airport",
-  "IST": "Istanbul Airport",
-  "LTBA": "Istanbul Atatürk Airport",
-  "ISL": "Istanbul Atatürk Airport",
-  "GMMN": "Casablanca Mohammed V International Airport",
-  "CMN": "Casablanca Mohammed V International Airport",
-  "HECA": "Cairo International Airport",
-  "CAI": "Cairo International Airport",
-  "OMDB": "Dubai International Airport",
-  "DXB": "Dubai International Airport",
-  "OJAI": "Amman Queen Alia International Airport",
-  "AMM": "Amman Queen Alia International Airport",
-  "LLBG": "Tel Aviv Ben Gurion Airport",
-  "TLV": "Tel Aviv Ben Gurion Airport",
-  "UUEE": "Moscow Sheremetyevo International Airport",
-  "SVO": "Moscow Sheremetyevo International Airport",
-  "UKBB": "Kyiv Boryspil International Airport",
-  "KBP": "Kyiv Boryspil International Airport",
-  "EYVI": "Vilnius Airport",
-  "VNO": "Vilnius Airport",
-  "EVRA": "Riga International Airport",
-  "RIX": "Riga International Airport",
-  "EETN": "Tallinn Airport",
-  "TLL": "Tallinn Airport",
-  "LZIB": "Bratislava Airport",
-  "BTS": "Bratislava Airport",
-  "LCLK": "Larnaca International Airport",
-  "LCA": "Larnaca International Airport",
-  "LMML": "Malta International Airport",
-  "MLA": "Malta International Airport",
-  "LQSA": "Sarajevo International Airport",
-  "SJJ": "Sarajevo International Airport",
-  "BKPR": "Pristina International Airport",
-  "PRN": "Pristina International Airport",
-  "LATI": "Tirana International Airport Nënë Tereza",
-  "TIA": "Tirana International Airport Nënë Tereza",
-  "LWSK": "Skopje International Airport",
-  "SKP": "Skopje International Airport",
-  "LYBE": "Belgrade Nikola Tesla Airport",
-  "BEG": "Belgrade Nikola Tesla Airport",
-  "LGGG": "Patras Araxos Airport",
-  "GPA": "Patras Araxos Airport",
-  "LFMN": "Nice Côte d'Azur Airport",
-  "NCE": "Nice Côte d'Azur Airport",
-  "LFML": "Marseille Provence Airport",
-  "MRS": "Marseille Provence Airport",
-  "LFLL": "Lyon–Saint-Exupéry Airport",
-  "LYS": "Lyon–Saint-Exupéry Airport",
-  "LFRS": "Nantes Atlantique Airport",
-  "NTE": "Nantes Atlantique Airport",
-  "LFBD": "Bordeaux–Mérignac Airport",
-  "BOD": "Bordeaux–Mérignac Airport",
-  "LFBO": "Toulouse–Blagnac Airport",
-  "TLS": "Toulouse–Blagnac Airport",
-  "LFOB": "Beauvais–Tillé Airport",
-  "BVA": "Beauvais–Tillé Airport",
-  "EDDW": "Bremen Airport",
-  "BRE": "Bremen Airport",
-  "EDDH": "Hamburg Airport",
-  "HAM": "Hamburg Airport",
-  "EDDK": "Cologne Bonn Airport",
-  "CGN": "Cologne Bonn Airport",
-  "EDDS": "Stuttgart Airport",
-  "STR": "Stuttgart Airport",
-  "LEPA": "Palma de Mallorca Airport",
-  "PMI": "Palma de Mallorca Airport",
-  "GCLP": "Gran Canaria Airport",
-  "LPA": "Gran Canaria Airport",
-  "GCTS": "Tenerife South Airport",
-  "TFS": "Tenerife South Airport",
-  "LPMA": "Madeira Cristiano Ronaldo Airport",
-  "FNC": "Madeira Cristiano Ronaldo Airport",
-  "LPPD": "Ponta Delgada João Paulo II Airport",
-  "PDL": "Ponta Delgada João Paulo II Airport",
-  "EGCC": "Manchester Airport",
-  "MAN": "Manchester Airport",
-  "EGPH": "Edinburgh Airport",
-  "EDI": "Edinburgh Airport",
-  "EGPF": "Glasgow Airport",
-  "GLA": "Glasgow Airport",
-  "EGBB": "Birmingham Airport",
-  "BHX": "Birmingham Airport",
-  "EINN": "Shannon Airport",
-  "SNN": "Shannon Airport",
-  "ELLX": "Luxembourg Airport",
-  "LUX": "Luxembourg Airport",
-  "ENBR": "Bergen Airport Flesland",
-  "BGO": "Bergen Airport Flesland",
-  "ESGG": "Gothenburg Landvetter Airport",
-  "GOT": "Gothenburg Landvetter Airport",
-  "EKYT": "Aalborg Airport",
-  "AAL": "Aalborg Airport",
-  "LIRN": "Naples Capodichino Airport",
-  "NAP": "Naples Capodichino Airport",
-  "LICC": "Catania–Fontanarossa Airport",
-  "CTA": "Catania–Fontanarossa Airport",
-  "LIBD": "Bari Karol Wojtyła Airport",
-  "BRI": "Bari Karol Wojtyła Airport",
-  "LIML": "Milan Linate Airport",
-  "LIN": "Milan Linate Airport",
-  "LIPZ": "Venice Marco Polo Airport",
-  "VCE": "Venice Marco Polo Airport",
-  "LIPX": "Verona Villafranca Airport",
-  "VRN": "Verona Villafranca Airport",
-  "LFKB": "Bastia–Poretta Airport",
-  "BIA": "Bastia–Poretta Airport",
-  "LGKR": "Corfu Ioannis Kapodistrias Airport",
-  "CFU": "Corfu Ioannis Kapodistrias Airport",
-  "LGIR": "Heraklion Nikos Kazantzakis Airport",
-  "HER": "Heraklion Nikos Kazantzakis Airport",
-  "LGZA": "Zakynthos Dionysios Solomos Airport",
-  "ZTH": "Zakynthos Dionysios Solomos Airport",
-  "LGRP": "Rhodes Airport Diagoras",
-  "RHO": "Rhodes Airport Diagoras",
-  "LTAI": "Antalya Airport",
-  "AYT": "Antalya Airport",
-  "LTFJ": "Istanbul Sabiha Gökçen Airport",
-  "SAW": "Istanbul Sabiha Gökçen Airport"
-} as const;
+export type AirportCoords = { lat: number; lon: number; name?: string };
+
+type CatalogPayload = {
+  names: Record<string, string>;
+  coords: Record<string, AirportCoords>;
+};
+
+let names: Record<string, string> = {};
+let coords: Record<string, AirportCoords> = {};
+let loadPromise: Promise<void> | null = null;
+
+/** Preload world airport names/coords from /data/airports.json (call once at app start). */
+export function ensureAirportsCatalog(): Promise<void> {
+  if (Object.keys(coords).length > 0) return Promise.resolve();
+  if (loadPromise) return loadPromise;
+  loadPromise = fetch("/data/airports.json")
+    .then((r) => {
+      if (!r.ok) throw new Error(`airports.json ${r.status}`);
+      return r.json() as Promise<CatalogPayload>;
+    })
+    .then((data) => {
+      names = data.names || {};
+      coords = data.coords || {};
+    })
+    .catch(() => {
+      names = {};
+      coords = {};
+    });
+  return loadPromise;
+}
 
 export function lookupAirportName(icao?: string | null, iata?: string | null): string | null {
   const a = (icao || "").trim().toUpperCase();
   const b = (iata || "").trim().toUpperCase();
-  if (a && AIRPORTS_BY_CODE[a]) return AIRPORTS_BY_CODE[a];
-  if (b && AIRPORTS_BY_CODE[b]) return AIRPORTS_BY_CODE[b];
+  if (a && names[a]) return names[a];
+  if (b && names[b]) return names[b];
+  return null;
+}
+
+export function lookupAirportCoords(icao?: string | null, iata?: string | null): AirportCoords | null {
+  const a = (icao || "").trim().toUpperCase();
+  const b = (iata || "").trim().toUpperCase();
+  if (a && coords[a]) return coords[a];
+  if (b && coords[b]) return coords[b];
   return null;
 }

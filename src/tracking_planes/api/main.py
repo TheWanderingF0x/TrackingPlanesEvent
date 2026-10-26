@@ -11,6 +11,7 @@ from tracking_planes.api.snapshots import (
     build_emissions_payload,
     build_flights_payload,
     build_specs_payload,
+    drop_unknown_or_other_aircraft,
 )
 
 app = FastAPI(
@@ -40,8 +41,8 @@ def flights(
     complete_specs_only: bool = False,
     limit: int = Query(500, ge=1, le=5000),
 ) -> dict:
-    # Filters still applied live for local API; static export uses unfiltered snapshot
-    df = dl.load_flights()
+    # Filters still applied live for local API; static export uses same Unknown/Other drop
+    df = drop_unknown_or_other_aircraft(dl.load_flights())
     if df.empty:
         return build_flights_payload(limit=limit)
     if airline:
