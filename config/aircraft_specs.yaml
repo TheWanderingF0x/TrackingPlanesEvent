@@ -1,0 +1,267 @@
+# ICAO typecode → typical operational specs (open / industry averages).
+# Incomplete rows: is_complete=false and missing_fields listed for review.
+# Sources: public manufacturer data sheets & open aviation tables (approximate).
+# Not for regulatory emissions reporting.
+
+specs:
+  - typecode: A320
+    manufacturer: Airbus
+    manufacturer_family: Airbus
+    model_name: A320-200
+    seats_typical: 180
+    mtow_kg: 78000
+    engine_class: turbofan
+    fuel_burn_cruise_kg_per_h: 2400
+    nox_index_g_per_kg_fuel: 15.0
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  - typecode: A319
+    manufacturer: Airbus
+    manufacturer_family: Airbus
+    model_name: A319-100
+    seats_typical: 144
+    mtow_kg: 75500
+    engine_class: turbofan
+    fuel_burn_cruise_kg_per_h: 2200
+    nox_index_g_per_kg_fuel: 14.5
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  - typecode: A321
+    manufacturer: Airbus
+    manufacturer_family: Airbus
+    model_name: A321-200
+    seats_typical: 220
+    mtow_kg: 93500
+    engine_class: turbofan
+    fuel_burn_cruise_kg_per_h: 2700
+    nox_index_g_per_kg_fuel: 15.5
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  - typecode: A20N
+    manufacturer: Airbus
+    manufacturer_family: Airbus
+    model_name: A320neo
+    seats_typical: 180
+    mtow_kg: 79000
+    engine_class: turbofan
+    fuel_burn_cruise_kg_per_h: 2000
+    nox_index_g_per_kg_fuel: 12.0
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  - typecode: A21N
+    manufacturer: Airbus
+    manufacturer_family: Airbus
+    model_name: A321neo
+    seats_typical: 220
+    mtow_kg: 97000
+    engine_class: turbofan
+    fuel_burn_cruise_kg_per_h: 2300
+    nox_index_g_per_kg_fuel: 12.5
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  - typecode: A333
+    manufacturer: Airbus
+    manufacturer_family: Airbus
+    model_name: A330-300
+    seats_typical: 300
+    mtow_kg: 242000
+    engine_class: turbofan
+    fuel_burn_cruise_kg_per_h: 5600
+    nox_index_g_per_kg_fuel: 18.0
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  - typecode: A359
+    manufacturer: Airbus
+    manufacturer_family: Airbus
+    model_name: A350-900
+    seats_typical: 325
+    mtow_kg: 280000
+    engine_class: turbofan
+    fuel_burn_cruise_kg_per_h: 5800
+    nox_index_g_per_kg_fuel: 14.0
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  - typecode: B738
+    manufacturer: Boeing
+    manufacturer_family: Boeing
+    model_name: 737-800
+    seats_typical: 189
+    mtow_kg: 79010
+    engine_class: turbofan
+    fuel_burn_cruise_kg_per_h: 2500
+    nox_index_g_per_kg_fuel: 15.0
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  - typecode: B737
+    manufacturer: Boeing
+    manufacturer_family: Boeing
+    model_name: 737-700
+    seats_typical: 148
+    mtow_kg: 70080
+    engine_class: turbofan
+    fuel_burn_cruise_kg_per_h: 2300
+    nox_index_g_per_kg_fuel: 14.5
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  - typecode: B38M
+    manufacturer: Boeing
+    manufacturer_family: Boeing
+    model_name: 737 MAX 8
+    seats_typical: 189
+    mtow_kg: 82191
+    engine_class: turbofan
+    fuel_burn_cruise_kg_per_h: 2100
+    nox_index_g_per_kg_fuel: 12.0
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  - typecode: B77W
+    manufacturer: Boeing
+    manufacturer_family: Boeing
+    model_name: 777-300ER
+    seats_typical: 396
+    mtow_kg: 351500
+    engine_class: turbofan
+    fuel_burn_cruise_kg_per_h: 7500
+    nox_index_g_per_kg_fuel: 20.0
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  - typecode: B789
+    manufacturer: Boeing
+    manufacturer_family: Boeing
+    model_name: 787-9
+    seats_typical: 290
+    mtow_kg: 254000
+    engine_class: turbofan
+    fuel_burn_cruise_kg_per_h: 5400
+    nox_index_g_per_kg_fuel: 13.5
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  - typecode: B744
+    manufacturer: Boeing
+    manufacturer_family: Boeing
+    model_name: 747-400
+    seats_typical: 416
+    mtow_kg: 396890
+    engine_class: turbofan
+    fuel_burn_cruise_kg_per_h: 10500
+    nox_index_g_per_kg_fuel: 22.0
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  - typecode: E190
+    manufacturer: Embraer
+    manufacturer_family: Embraer
+    model_name: E190
+    seats_typical: 100
+    mtow_kg: 51800
+    engine_class: turbofan
+    fuel_burn_cruise_kg_per_h: 1600
+    nox_index_g_per_kg_fuel: 13.0
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  - typecode: E195
+    manufacturer: Embraer
+    manufacturer_family: Embraer
+    model_name: E195
+    seats_typical: 120
+    mtow_kg: 52290
+    engine_class: turbofan
+    fuel_burn_cruise_kg_per_h: 1700
+    nox_index_g_per_kg_fuel: 13.0
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  - typecode: CRJ9
+    manufacturer: Bombardier
+    manufacturer_family: Bombardier
+    model_name: CRJ-900
+    seats_typical: 90
+    mtow_kg: 36514
+    engine_class: turbofan
+    fuel_burn_cruise_kg_per_h: 1400
+    nox_index_g_per_kg_fuel: 12.5
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  - typecode: AT76
+    manufacturer: ATR
+    manufacturer_family: ATR
+    model_name: ATR 72-600
+    seats_typical: 70
+    mtow_kg: 23000
+    engine_class: turboprop
+    fuel_burn_cruise_kg_per_h: 800
+    nox_index_g_per_kg_fuel: 8.0
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  - typecode: DH8D
+    manufacturer: De Havilland
+    manufacturer_family: De Havilland
+    model_name: Dash 8 Q400
+    seats_typical: 78
+    mtow_kg: 29574
+    engine_class: turboprop
+    fuel_burn_cruise_kg_per_h: 900
+    nox_index_g_per_kg_fuel: 8.5
+    source: open-approx
+    is_complete: true
+    missing_fields: []
+
+  # A380-800: MTOW recent production ~575000 kg (early cert ~560000);
+  # cruise burn ~11000–13000 kg/h; NOx EI cruise ~14–17 g/kg fuel (GP7200 / Trent 900).
+  - typecode: A388
+    manufacturer: Airbus
+    manufacturer_family: Airbus
+    model_name: A380-800
+    seats_typical: 525
+    mtow_kg: 575000
+    engine_class: turbofan
+    fuel_burn_cruise_kg_per_h: 12000
+    nox_index_g_per_kg_fuel: 15.5
+    source: open-approx-user-supplied
+    is_complete: true
+    missing_fields: []
+
+  - typecode: UNKNOWN
+    manufacturer: null
+    manufacturer_family: Unknown
+    model_name: null
+    seats_typical: null
+    mtow_kg: null
+    engine_class: null
+    fuel_burn_cruise_kg_per_h: null
+    nox_index_g_per_kg_fuel: null
+    source: placeholder
+    is_complete: false
+    missing_fields: [manufacturer, model_name, seats_typical, mtow_kg, engine_class, fuel_burn_cruise_kg_per_h, nox_index_g_per_kg_fuel]

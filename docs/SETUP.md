@@ -1,9 +1,12 @@
 # Setup guide — local PC and Oracle Cloud
 
-This guide walks through running **TrackingPlanesEvent** in two ways:
+**Deploy strategy:** Phase 1 = this PC + Databricks; Phase 2 = optional VPS/home server.  
+See **[CLOUD_AND_DATABRICKS.md](CLOUD_AND_DATABRICKS.md)** for the full two-phase plan.
 
-1. **Local** — develop and learn on your machine (Windows or Linux/macOS)
-2. **Oracle Always Free** — 24/7 collector + daily PySpark on a free Ampere VM
+This guide covers:
+
+1. **Local (Phase 1 host)** — collector, Spark, emissions, React/API on your machine  
+2. **Linux always-on host (Phase 2)** — Oracle Always Free, Hetzner, or home server via `deploy/oracle/`
 
 Both paths need the same OpenSky OAuth credentials in a private `.env` file. Never commit `.env` to GitHub.
 
@@ -19,26 +22,33 @@ Both paths need the same OpenSky OAuth credentials in a private `.env` file. Nev
 6. [Oracle Cloud Always Free (24/7)](#6-oracle-cloud-always-free-247)
 7. [Environment variables reference](#7-environment-variables-reference)
 8. [Troubleshooting](#8-troubleshooting)
+9. Phase 1/2 + Databricks — [CLOUD_AND_DATABRICKS.md](CLOUD_AND_DATABRICKS.md), [DATABRICKS.md](DATABRICKS.md)
 
 ---
 
 ## 1. What the project does
 
 ```text
-OpenSky /states/all  →  collector (Parquet snapshots)
+OpenSky /states/all  →  PC (Phase 1) or VPS/server (Phase 2) collector
                               ↓
-                     PySpark sessionize + aircraft type
+              PySpark: flights + OD + specs → silver
                               ↓
-              curated flights + track points (altitude, speed)
+         Open-Meteo + sklearn → gold fuel/NOx estimates
                               ↓
-                         Streamlit dashboard
+         FastAPI + React  |  sync → Databricks Volume → Delta
+         Streamlit = internal explorer only
 ```
 
 | Piece | Role |
 |-------|------|
 | Collector | Polls OpenSky every ~2 minutes, keeps major European airlines |
-| PySpark | Rebuilds UTC-day flights and full route kinematics |
-| Streamlit | Browse by airline → aircraft type → flight |
+| PySpark | Rebuilds UTC-day flights, OD airports, manufacturer family, specs join |
+| ML | Fuel/NOx estimates with Open-Meteo weather features |
+| React + FastAPI | Public results portal |
+| Streamlit | Internal/dev route explorer |
+| Databricks | Lakehouse (Phase 1) — see [DATABRICKS.md](DATABRICKS.md) |
+
+After local pipeline works: `.\scripts\phase1_status.ps1` then Databricks sync in [CLOUD_AND_DATABRICKS.md](CLOUD_AND_DATABRICKS.md).
 
 ---
 
@@ -198,18 +208,44 @@ Outputs:
 ```text
 data/curated/flights/utc_date=YYYY-MM-DD/
 data/curated/track_points/utc_date=YYYY-MM-DD/
+data/silver/flights/utc_date=YYYY-MM-DD/
+data/reference/aircraft_specs.parquet
 ```
 
-### Step D — Streamlit dashboard
+### Step D — Emissions estimates (fuel / NOx)
+
+```powershell
+python scripts/run_emissions.py --no-weather
+# or with Open-Meteo (needs network):
+python scripts/run_emissions.py
+```
+
+Writes `data/gold/flight_emissions_estimates/`. Incomplete specs are excluded from estimate totals.
+
+### Step E — Results website (React + FastAPI)
+
+Demo without live OpenSky data:
+
+```powershell
+python scripts/generate_sample_results.py
+python scripts/run_api.py
+```
+
+In another terminal:
+
+```powershell
+cd web
+npm install
+npm run dev
+```
+
+Open http://localhost:5173 — Flights, Routes (MapLibre), Specs, Emissions.
+
+### Step F — Streamlit (internal explorer)
 
 ```powershell
 streamlit run src/tracking_planes/app/streamlit_app.py
 ```
-
-Open the URL shown in the terminal (usually http://localhost:8501).
-
-Filter: **UTC date → airline → aircraft type → flight**  
-Charts: altitude, ground speed, route map.
 
 ### Local daily helper
 
@@ -223,7 +259,7 @@ python scripts/run_spark_yesterday.py
 
 ## 6. Oracle Cloud Always Free (24/7)
 
-Goal: collector runs all day via **systemd**; PySpark runs every night via **cron**; Streamlit only when you SSH-tunnel in.
+Goal: collector runs all day via **systemd**; PySpark runs every night via **cron**; React results site via **nginx + FastAPI**; Streamlit only via SSH tunnel if needed.
 
 Also see the short ops sheet: [deploy/oracle/README.md](../deploy/oracle/README.md).
 
@@ -237,7 +273,7 @@ In **Oracle Cloud Console**:
    - Recommended: **2 OCPU**, **12 GB RAM**, **50 GB** boot
 4. Paste your **SSH public key**
 5. Networking: allow **TCP 22** inbound (prefer “your IP only”).  
-   Do **not** open port 8501 to the internet.
+   Open **TCP 80** if you want the public React site; keep Streamlit (**8501**) closed to the internet.
 
 Note the **public IP**. SSH:
 
@@ -254,32 +290,31 @@ timedatectl
 
 ### 6.2 Copy the project to the VM
 
-**Option A — git clone** (if the repo is on GitHub):
+**Option A — Windows upload script** (recommended from this PC):
+
+```powershell
+cd d:\Dev_Area\TrackingPlanesEvent
+.\deploy\oracle\upload_from_windows.ps1 -PublicIp <PUBLIC_IP>
+```
+
+Uses your `~\.ssh\id_ed25519` key, packs the tree (no `.venv` / no `.env` / no raw data), extracts to `/opt/tracking-planes`.
+
+**Option B — git clone** (only if latest code is already pushed to GitHub):
 
 ```bash
 sudo mkdir -p /opt/tracking-planes
 sudo chown ubuntu:ubuntu /opt/tracking-planes
-git clone https://github.com/<you>/<repo>.git /opt/tracking-planes
+git clone https://github.com/TheWanderingF0x/TrackingPlanesEvent.git /opt/tracking-planes
 ```
 
-**Option B — rsync from your PC** (PowerShell / WSL / macOS / Linux):
-
-On the VM:
-
-```bash
-sudo mkdir -p /opt/tracking-planes
-sudo chown ubuntu:ubuntu /opt/tracking-planes
-```
-
-From your PC (project root):
+**Option C — rsync** (WSL / macOS / Linux):
 
 ```bash
 rsync -avz -e "ssh -i ~/.ssh/your_private_key" \
   --exclude .venv --exclude .git --exclude data/raw --exclude data/curated \
+  --exclude .env --exclude web/node_modules \
   ./ ubuntu@<PUBLIC_IP>:/opt/tracking-planes/
 ```
-
-Windows tip: use **WSL** or install rsync, or zip the project and `scp` it.
 
 ### 6.3 Create `.env` on the VM
 
@@ -315,11 +350,13 @@ sudo bash deploy/oracle/setup.sh
 
 The script:
 
-- installs Python 3 + OpenJDK 17
+- installs Python 3 + OpenJDK 17 + Node 20 + nginx
 - creates system user `planes`
 - builds `.venv` and installs requirements
-- enables `tracking-planes-collector` (systemd, restart on failure)
-- installs crontab: Spark at **00:15 UTC**, weekly data prune
+- enables **collector** + **FastAPI** systemd units
+- builds React (`web/`) and configures nginx on port 80
+- seeds sample results so the site works before the first live Spark day
+- crontab: Spark **00:15 UTC**, emissions **01:00**, weekly prune
 
 ### 6.5 Verify on Oracle
 

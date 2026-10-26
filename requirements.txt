@@ -7,3 +7,9 @@ streamlit>=1.28.0
 plotly>=5.18.0
 pydeck>=0.9.0
 pyyaml>=6.0.1
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+scikit-learn>=1.4.0
+joblib>=1.3.0
+# Phase 1 Volume sync (scripts/sync_to_databricks.py)
+databricks-sdk>=0.40.0

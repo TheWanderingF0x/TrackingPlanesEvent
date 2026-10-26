@@ -1,5 +1,76 @@
 # Changelog
 
+## 0.5.5 — 2026-10-26
+
+- **Phase C:** phone primary collector (Syncthing → PC); `scripts/phase_c_process.py` runs Spark → emissions → `web/public/data/*.json`; optional Databricks sync; Vercel static site (`web/vercel.json`) with daily-update disclaimer. Docs: [`docs/PHASE_C_PHONE.md`](docs/PHASE_C_PHONE.md).
+- `scripts/phase_c_publish.ps1`: process + commit/push `web/public/data` so GitHub-linked Vercel redeploys alone.
+
+## 0.5.4 — 2026-10-26
+
+- Public **Analytics** page (`/analytics`): fleet mix + CO₂/fuel bar charts via `/api/analytics` (UNKNOWN types excluded) — Databricks-style rollups on the React site.
+- Analytics page: removed lede copy under the title.
+
+## 0.5.3 — 2026-10-26
+
+- Distance: `distance_km` = max of **airport→airport haversine** (when dep≠arr), **track endpoint haversine**, and **speed×duration** estimate; `track_gcd_km` kept separately; emissions use ICEC-corrected max with path distance.
+
+## 0.5.2 — 2026-10-26
+
+- Two-phase deploy: **Phase 1 = PC + Databricks**, **Phase 2 = VPS/home server** ([`docs/CLOUD_AND_DATABRICKS.md`](docs/CLOUD_AND_DATABRICKS.md)).
+- Scripts: `scripts/phase1_status.ps1`, `scripts/sync_to_databricks.ps1` + `sync_to_databricks.py` (databricks-sdk Volume upload; PAT or `databricks auth login` OAuth).
+- `.env.example` Databricks catalog/schema/volume hints (`trackingplanes` / `tracking_planes`); README/SETUP/DATABRICKS aligned.
+
+## 0.5.1 — 2026-10-26
+
+- Nav order: Flights → Emissions → Routes → Specs.
+- Cloud/Databricks runbook: [`docs/CLOUD_AND_DATABRICKS.md`](docs/CLOUD_AND_DATABRICKS.md).
+- Fuel proxy: do not invent phase hours longer than observed duration (fixes inflated totals on short ADS-B slices).
+- Local live smoke: OpenSky poll → Spark 2026-10-26 → gold emissions.
+
+## 0.5.0 — 2026-10-26
+
+- Emissions v2 (**ICEC-inspired**): GCD correction, load/pax-to-cargo factors, CO₂ = fuel×3.16; track **path distance** + climb/cruise/descent/LTO phases; Open-Meteo **dep/mid/arr** + headwind as ML features only; UI shows fuel/CO₂/NOx. Docs: [`docs/EMISSIONS.md`](docs/EMISSIONS.md).
+
+## 0.4.6 — 2026-10-26
+
+- Open-Meteo weather is model input only (fuel/NOx) — removed from Flights/Routes/Emissions UI; fixed Routes map sizing (`resize`).
+
+## 0.4.5 — 2026-10-26
+
+- Favicon from `flight_30822.webp`; all site media under `web/public/` (`media/hero-tarom-b738.jpg`, `media/flight_30822.webp`, favicon PNG/WebP).
+
+## 0.4.4 — 2026-10-26
+
+- Open-Meteo weather shown **per flight** (temp / wind / pressure) on Flights, Routes, and Emissions; gold keeps real API values; sample regenerated with live archive calls.
+
+## 0.4.3 — 2026-10-26
+
+- Landing hero uses original TAROM Boeing 737-800 photo (`web/public/hero-tarom-b738.jpg`) instead of stock Unsplash; no on-page photo credit.
+- Specs API/UI hides the `UNKNOWN` placeholder row (still used internally for incomplete joins).
+- Specs table shows the Missing column only when at least one type has incomplete fields; removed Complete/Incomplete counters, incomplete filter, and specs page lede text.
+- Landing hero fills the viewport (no light gap / white bar under the photo).
+
+## 0.4.2 — 2026-10-26
+
+- Oracle deploy: `setup.sh` now installs FastAPI + nginx/React, sample seed, emissions cron; added `deploy/oracle/upload_from_windows.ps1` for PC → VM upload.
+
+## 0.4.1 — 2026-10-26
+
+- Completed A380-800 (`A388`) specs: MTOW 575000 kg, cruise fuel ~12000 kg/h (11–13 t/h band), NOx EI 15.5 g/kg fuel (14–17 cruise band); marked `is_complete` and refreshed sample gold data.
+
+## 0.4.0 — 2026-10-26
+
+- Product roadmap rewrite: [`docs/PM_PLAN_TrackingPlanesEvent.md`](docs/PM_PLAN_TrackingPlanesEvent.md) (phases B–G, ~30–45 h).
+- Silver enrichment: manufacturer family, nearest-airport OD, flight_number, duration, specs join + completeness flags ([`config/aircraft_specs.yaml`](config/aircraft_specs.yaml), [`config/airports_europe.csv`](config/airports_europe.csv)).
+- Open-Meteo weather client + scikit-learn fuel/NOx estimates → gold Parquet (`scripts/run_emissions.py`).
+- Modern results site: FastAPI (`scripts/run_api.py`) + Vite/React/MapLibre (`web/`); sample demo data via `scripts/generate_sample_results.py`.
+- Databricks docs + notebook skeletons; Oracle nginx + API systemd units.
+- Streamlit kept as internal explorer only.
+
+## 0.3.3 — 2026-10-23
+
+- Added portfolio PM plan: [`docs/PM_PLAN_TrackingPlanesEvent.md`](docs/PM_PLAN_TrackingPlanesEvent.md) (WBS, schedule, DoD for interview-ready polish)
+
 ## 0.3.2 — 2026-09-08
 
 - Route basemap sidebar: **Carto (free)** vs **Google Maps**; Carto is default so a key-without-billing no longer shows a blank dark map. Google checklist caption when selected.

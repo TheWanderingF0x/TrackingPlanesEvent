@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Bootstrap TrackingPlanesEvent on Oracle Always Free (Ubuntu 22.04 aarch64).
+# Installs: collector systemd, Spark/emissions cron, FastAPI, nginx + React build.
 set -euo pipefail
 
 APP_ROOT="${APP_ROOT:-/opt/tracking-planes}"
 APP_USER="${APP_USER:-planes}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+INSTALL_WEB="${INSTALL_WEB:-1}"
 
 if [[ "$(id -u)" -ne 0 ]]; then
   echo "Run as root: sudo bash deploy/oracle/setup.sh"
@@ -22,7 +24,15 @@ apt-get install -y \
   git \
   curl \
   rsync \
-  ca-certificates
+  ca-certificates \
+  nginx
+
+# Node 20 LTS (for React build) — NodeSource if apt node is too old
+if ! command -v node >/dev/null 2>&1 || [[ "$(node -v 2>/dev/null | sed 's/v//' | cut -d. -f1 || echo 0)" -lt 18 ]]; then
+  echo "==> Installing Node.js 20"
+  curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+  apt-get install -y nodejs
+fi
 
 JAVA_HOME_CANDIDATE="$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")"
 if [[ -d /usr/lib/jvm/java-17-openjdk-arm64 ]]; then
@@ -59,6 +69,11 @@ fi
 chmod 600 "${APP_ROOT}/.env"
 chown "${APP_USER}:${APP_USER}" "${APP_ROOT}/.env"
 
+# Ensure Spark memory hint for A1 12GB if unset in .env
+if ! grep -q '^SPARK_DRIVER_MEMORY=' "${APP_ROOT}/.env"; then
+  echo "SPARK_DRIVER_MEMORY=4g" >> "${APP_ROOT}/.env"
+fi
+
 echo "==> Creating Python venv and installing requirements"
 sudo -u "${APP_USER}" bash -lc "
   set -euo pipefail
@@ -73,13 +88,24 @@ sudo -u "${APP_USER}" bash -lc "
   mkdir -p '${APP_ROOT}/data/raw/states' \
            '${APP_ROOT}/data/curated/flights' \
            '${APP_ROOT}/data/curated/track_points' \
+           '${APP_ROOT}/data/silver/flights' \
+           '${APP_ROOT}/data/gold' \
+           '${APP_ROOT}/data/reference' \
            '${APP_ROOT}/data/aircraft' \
            '${APP_ROOT}/logs'
 "
 
-echo "==> Installing systemd unit"
+echo "==> Seed sample results (website works before first live Spark day)"
+sudo -u "${APP_USER}" bash -lc "
+  cd '${APP_ROOT}'
+  .venv/bin/python scripts/generate_sample_results.py || true
+"
+
+echo "==> Installing systemd units"
 install -m 644 "${SCRIPT_DIR}/tracking-planes-collector.service" \
   /etc/systemd/system/tracking-planes-collector.service
+install -m 644 "${SCRIPT_DIR}/tracking-planes-api.service" \
+  /etc/systemd/system/tracking-planes-api.service
 
 mkdir -p /etc/systemd/system/tracking-planes-collector.service.d
 cat >/etc/systemd/system/tracking-planes-collector.service.d/java.conf <<EOF
@@ -88,15 +114,39 @@ Environment=JAVA_HOME=${JAVA_HOME_CANDIDATE}
 Environment=PATH=${JAVA_HOME_CANDIDATE}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
 EOF
 
-# Rewrite unit paths if APP_ROOT differs from default
 if [[ "${APP_ROOT}" != "/opt/tracking-planes" ]]; then
   sed -i "s|/opt/tracking-planes|${APP_ROOT}|g" \
-    /etc/systemd/system/tracking-planes-collector.service
+    /etc/systemd/system/tracking-planes-collector.service \
+    /etc/systemd/system/tracking-planes-api.service
+fi
+
+if [[ "${INSTALL_WEB}" == "1" ]]; then
+  echo "==> Building React site"
+  sudo -u "${APP_USER}" bash -lc "
+    set -euo pipefail
+    cd '${APP_ROOT}/web'
+    npm ci
+    npm run build
+  "
+
+  echo "==> Configuring nginx"
+  install -m 644 "${SCRIPT_DIR}/nginx-tracking-planes.conf" \
+    /etc/nginx/sites-available/tracking-planes
+  if [[ "${APP_ROOT}" != "/opt/tracking-planes" ]]; then
+    sed -i "s|/opt/tracking-planes|${APP_ROOT}|g" \
+      /etc/nginx/sites-available/tracking-planes
+  fi
+  ln -sf /etc/nginx/sites-available/tracking-planes /etc/nginx/sites-enabled/tracking-planes
+  rm -f /etc/nginx/sites-enabled/default
+  nginx -t
+  systemctl enable nginx
+  systemctl reload nginx
 fi
 
 systemctl daemon-reload
-systemctl enable tracking-planes-collector.service
+systemctl enable tracking-planes-collector.service tracking-planes-api.service
 systemctl restart tracking-planes-collector.service
+systemctl restart tracking-planes-api.service
 
 echo "==> Installing crontab for user ${APP_USER}"
 CRON_FILE="$(mktemp)"
@@ -108,6 +158,12 @@ PATH=${JAVA_HOME_CANDIDATE}/bin:/usr/bin:/bin
 
 # Daily PySpark for previous UTC day
 15 0 * * * cd ${APP_ROOT} && .venv/bin/python scripts/run_spark_yesterday.py >> logs/spark_cron.log 2>&1
+
+# Emissions after Spark (01:00 UTC) — uses Open-Meteo when network allows
+0 1 * * * cd ${APP_ROOT} && .venv/bin/python scripts/run_emissions.py >> logs/emissions_cron.log 2>&1
+
+# Reload API cache after gold write
+10 1 * * * curl -s -X POST http://127.0.0.1:8000/api/reload >/dev/null 2>&1 || true
 
 # Weekly prune raw (>14d) and curated (>90d)
 30 3 * * 0 find ${APP_ROOT}/data/raw/states -mindepth 1 -mtime +14 -delete >> logs/prune_cron.log 2>&1
@@ -125,7 +181,8 @@ sudo -u "${APP_USER}" bash -lc "
 
 echo
 echo "Done."
-echo "  Collector status: systemctl status tracking-planes-collector"
-echo "  Collector logs:   journalctl -u tracking-planes-collector -f"
-echo "  Spark (manual):   sudo -u ${APP_USER} ${APP_ROOT}/.venv/bin/python ${APP_ROOT}/scripts/run_spark_yesterday.py"
-echo "  Streamlit tunnel: ssh -L 8501:127.0.0.1:8501 ubuntu@<vm-ip>"
+echo "  Collector: systemctl status tracking-planes-collector"
+echo "  API:       systemctl status tracking-planes-api"
+echo "  Site:      http://<PUBLIC_IP>/   (open TCP 80 in OCI + OS firewall)"
+echo "  Health:    curl -s http://127.0.0.1:8000/api/health"
+echo "  Logs:      journalctl -u tracking-planes-collector -f"

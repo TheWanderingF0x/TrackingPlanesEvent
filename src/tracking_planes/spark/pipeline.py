@@ -6,8 +6,13 @@ import logging
 from pathlib import Path
 
 from tracking_planes.aircraft_registry import download_aircraft_database
+from tracking_planes.aircraft_specs import load_aircraft_specs, write_specs_parquet
 from tracking_planes.config import Settings
-from tracking_planes.spark.enrich import enrich_with_aircraft_type
+from tracking_planes.spark.enrich import (
+    enrich_manufacturer_and_route,
+    enrich_with_aircraft_type,
+    enrich_with_specs,
+)
 from tracking_planes.spark.session import build_spark
 from tracking_planes.spark.sessionize_flights import (
     load_raw_states,
@@ -34,6 +39,8 @@ def run_pipeline(settings: Settings, utc_date: str, *, refresh_aircraft_db: bool
         flights, tracks = enrich_with_aircraft_type(
             spark, flights, tracks, settings.aircraft_dir
         )
+        flights = enrich_manufacturer_and_route(spark, flights)
+        flights = enrich_with_specs(spark, flights)
 
         settings.flights_dir.mkdir(parents=True, exist_ok=True)
         settings.track_points_dir.mkdir(parents=True, exist_ok=True)
@@ -45,8 +52,22 @@ def run_pipeline(settings: Settings, utc_date: str, *, refresh_aircraft_db: bool
             utc_date,
         )
 
+        # Silver / reference exports for API + Databricks sync
+        settings.silver_dir.mkdir(parents=True, exist_ok=True)
+        settings.reference_dir.mkdir(parents=True, exist_ok=True)
+        write_specs_parquet(load_aircraft_specs(), settings.reference_dir)
+
+        silver_flights = settings.silver_dir / "flights" / f"utc_date={utc_date}"
+        silver_flights.mkdir(parents=True, exist_ok=True)
+        (
+            flights.write.mode("overwrite")
+            .option("compression", "snappy")
+            .parquet(str(silver_flights))
+        )
+        logger.info("Wrote silver flights -> %s", silver_flights)
+
         by_airline = (
-            flights.groupBy("airline_icao", "airline_name", "aircraft_type")
+            flights.groupBy("airline_icao", "airline_name", "aircraft_type", "manufacturer_family")
             .count()
             .orderBy("airline_icao", "aircraft_type")
         )

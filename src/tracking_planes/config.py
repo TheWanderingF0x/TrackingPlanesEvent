@@ -61,6 +61,22 @@ class Settings:
     def track_points_dir(self) -> Path:
         return self.curated_dir / "track_points"
 
+    @property
+    def silver_dir(self) -> Path:
+        return self.data_dir / "silver"
+
+    @property
+    def gold_dir(self) -> Path:
+        return self.data_dir / "gold"
+
+    @property
+    def reference_dir(self) -> Path:
+        return self.data_dir / "reference"
+
+    @property
+    def sample_dir(self) -> Path:
+        return self.data_dir / "sample"
+
 
 def _require(name: str) -> str:
     value = os.getenv(name, "").strip()

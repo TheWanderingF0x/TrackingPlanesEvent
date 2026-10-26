@@ -37,9 +37,18 @@ logs/
 data/raw/**
 data/curated/**
 data/aircraft/**
+data/silver/**
+data/gold/**
+data/reference/**
 !data/raw/.gitkeep
 !data/curated/.gitkeep
 !data/aircraft/.gitkeep
+!data/sample/**
+!data/sample/**/.gitkeep
+
+# Node / frontend build
+web/node_modules/
+web/dist/
 
 # IDE / OS
 .idea/

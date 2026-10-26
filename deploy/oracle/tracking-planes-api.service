@@ -1,0 +1,17 @@
+[Unit]
+Description=TrackingPlanesEvent FastAPI results API
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/tracking-planes
+Environment=PYTHONUNBUFFERED=1
+Environment=DATA_DIR=/opt/tracking-planes/data
+EnvironmentFile=-/opt/tracking-planes/.env
+ExecStart=/opt/tracking-planes/.venv/bin/python /opt/tracking-planes/scripts/run_api.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
