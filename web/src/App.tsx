@@ -5,6 +5,7 @@ import FlightsPage from "./pages/FlightsPage";
 import RoutesPage from "./pages/RoutesPage";
 import EmissionsPage from "./pages/EmissionsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import AboutPage from "./pages/AboutPage";
 
 function showAirportLabelToggle(pathname: string): boolean {
   return (
@@ -37,6 +38,9 @@ function AppShell() {
             <NavLink to="/routes" className={({ isActive }) => (isActive ? "active" : "")}>
               Routes
             </NavLink>
+            <NavLink to="/about" className={({ isActive }) => (isActive ? "active" : "")}>
+              About
+            </NavLink>
           </nav>
         </div>
       </header>
@@ -48,6 +52,7 @@ function AppShell() {
           <Route path="/routes/:flightId" element={<RoutesPage />} />
           <Route path="/emissions" element={<EmissionsPage />} />
           <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route path="/about" element={<AboutPage />} />
         </Routes>
       </main>
     </div>
